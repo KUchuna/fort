@@ -3,4 +3,20 @@
 @theme {
   --color-background: #F9F1F0;
   --color-main: #FADCD9;
+  --color-accent: #F8AFA6;
+  --font-gilroy: 'Gilroy';
+}
+
+*{
+  font-family: 'Gilroy';
+}
+
+*::selection {
+  background-color: var(--color-accent);
+}
+
+.container {
+  padding: 1.5rem;
+  border-radius: 1.25rem;
+  background-color: var(--color-main);
 }
