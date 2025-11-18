@@ -1,11 +1,12 @@
 "use client";
 import { motion } from "motion/react";
+import Link from "next/link";
 
 export default function Header() {
   return (
     <header className="bg-main p-6 rounded-[20px] text-lg uppercase">
       <div className="flex justify-between items-center">
-        <p className="uppercase"><i>Tamar</i> <span className="font-semibold">Chirgadze</span></p>
+        <Link href={"/"} className="uppercase"><i>Tamar</i> <span className="font-semibold">Chirgadze</span></Link>
 
         <ul className="flex gap-6 font-light select-none">
           <motion.li
