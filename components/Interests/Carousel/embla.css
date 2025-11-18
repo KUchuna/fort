@@ -4,16 +4,16 @@
   --slide-height: 19rem;
   --slide-spacing: 2rem;
   --slide-size: 30%;
+  user-select: none;
 }
 .embla__viewport {
-    overflow-x: hidden;
+    overflow: hidden;
     padding: 24px;
     background-color: red;
 }
 .embla__container {
   display: flex;
   touch-action: pan-y pinch-zoom;
-  margin-left: calc(var(--slide-spacing) * -1);
 }
 .embla__slide {
   transform: translate3d(0, 0, 0);
@@ -83,4 +83,33 @@
 .embla__button__svg {
   width: 35%;
   height: 35%;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.8);
+  z-index: 900;
+  cursor: pointer;
+}
+
+.card-content-container.open {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.card-content-container.open .card-content {
+  background: #1c1c1e;
+  border-radius: 20px;
+  overflow: hidden;
 }
