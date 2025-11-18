@@ -13,8 +13,8 @@ interface TiltCardProps {
 const TiltCard: FC<TiltCardProps> = ({
   children,
   className = "",
-  maxTilt = 12,
-  perspective = 2000,
+  maxTilt = 20,
+  perspective = 1000,
 }) => {
   // motion values centered at 0 (0 = center)
   const mouseX = useMotionValue(0); // -0.5 .. 0.5
