@@ -1,12 +1,12 @@
 "use client"
 
 import Image from "next/image";
-import temp from "@/public/images/TEMP.png";
+import temp from "@/public/images/TEMP2.jpg";
 import {motion} from "motion/react";
 
 export default function HomeLeft() {
     return (
-        <section className="flex flex-col gap-6 w-[70%] h-full">
+        <section className="flex flex-col gap-6 w-[70%]">
             <div className="flex gap-6 w-full h-[60%]">
                 <motion.div className="container flex w-[80%]"
                      whileHover={{
@@ -16,7 +16,7 @@ export default function HomeLeft() {
                     }}
                     transition={{ type: "spring", stiffness: 200, damping: 15 }}
                 >
-                    <p className="mt-auto mb-20 text-5xl w-[70%] font-semibold">
+                    <p className="mt-auto mb-10 text-5xl w-[70%] font-semibold">
                         Artist Redefining Architecture with AI-Driven Design
                     </p>
                 </motion.div>

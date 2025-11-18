@@ -6,9 +6,9 @@ import Link from "next/link";
 
 export default function HomeRight() {
     return (
-        <section className="flex flex-col gap-6 w-[30%] h-full">
+        <section className="flex flex-col gap-6 w-[30%] flex-1">
             <div className="container flex flex-col gap-6 h-full">
-                <div className="flex flex-col group cursor-pointer gap-6">
+                <Link href={"/interests"} className="flex flex-col group cursor-pointer gap-6">
                     <div className="w-full flex items-center gap-2  cursor-pointer justify-between">
                         <span className="font-medium text-2xl select-none">Interests</span>
                         <Image
@@ -23,7 +23,7 @@ export default function HomeRight() {
                         />
                     </div>
                     <Image src={interests} alt=" interests" width={1000} height={1000} className="w-full rounded-[20px] transition-all duration-300 group-hover:scale-[1.05]" />
-                </div>
+                </Link>
                 <ul className="flex flex-col gap-6">
                     {[1,2,3].map((item) => (
                         <ListItem key={item}> 

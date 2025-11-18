@@ -5,7 +5,7 @@ export default function Header() {
   return (
     <header className="bg-main p-6 rounded-[20px] text-lg uppercase">
       <div className="flex justify-between items-center">
-        <p className="uppercase"><i>Name</i> <span className="font-semibold">surname</span></p>
+        <p className="uppercase"><i>Tamar</i> <span className="font-semibold">Chirgadze</span></p>
 
         <ul className="flex gap-6 font-light select-none">
           <motion.li
