@@ -2,13 +2,15 @@
 
 import Image from "next/image";
 import temp from "@/public/images/TEMP2.jpg";
+import flower from "@/public/icons/flower.svg";
+import circle from "@/public/icons/circle.svg";
 import {motion} from "motion/react";
 
 export default function HomeLeft() {
     return (
         <section className="flex flex-col gap-6 w-[70%]">
             <div className="flex gap-6 w-full h-[60%]">
-                <motion.div className="container flex w-[80%]"
+                <motion.div className="relative container flex w-[80%] group"
                      whileHover={{
                         y: -6,
                         scale: 1.02,
@@ -16,9 +18,10 @@ export default function HomeLeft() {
                     }}
                     transition={{ type: "spring", stiffness: 200, damping: 15 }}
                 >
-                    <p className="mt-auto mb-10 text-5xl w-[70%] font-semibold">
-                        Artist Redefining Architecture with AI-Driven Design
+                    <p className="mt-auto mb-20 text-5xl w-[70%]">
+                        A <span className="font-semibold">Vibrant</span> Personality Thriving on <span className="font-semibold">Connection, Spontaneity, and Discovery</span>
                     </p>
+                    <Image src={flower} alt="" width={200} height={200} className="absolute right-6 top-6 group-hover:rotate-90 transition-all duration-200"/>
                 </motion.div>
                 <motion.div
                     whileHover={{
@@ -40,10 +43,11 @@ export default function HomeLeft() {
                         boxShadow: "0px 8px 20px rgba(255, 182, 193, 0.25)",
                     }}
                 transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                className="flex flex-1 container">
+                className="flex flex-1 container relative group">
                     <p className="mt-auto w-5/7 text-lg">
-                        Julia Huang is an innovative AI artist, renowned for blending cutting-edge technology with creative expression. Based in LA, she crafts unique digital art experiences accessible globally.
+                        I’m an outgoing and endlessly curious person who loves saying yes to new experiences - whether it’s discovering hidden places, trying something completely unexpected, or meeting people with stories that spark my imagination. I’m happiest when life feels a little adventurous, a little chaotic, and full of possibility. I like to think of myself as someone who brings energy and warmth wherever I go, someone who laughs easily, connects quickly, and embraces every moment with an open mind. If there’s something new to explore, I’m already on my way.
                     </p>
+                    <Image src={circle} alt="" width={100} height={100} className="absolute left-6 top-6 group-hover:-rotate-90 transition-all duration-200"/>
                 </motion.div>
                 <motion.div
                     whileHover={{

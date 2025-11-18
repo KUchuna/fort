@@ -141,8 +141,6 @@ const EmblaCarousel: React.FC<PropType> = ({ slides, options }) => {
                   <p>
                     Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
                   </p>
-                  {/* Extra content to test scrolling */}
-                  <div style={{ height: "600px" }}></div>
                 </motion.div>
               </motion.div>
             </div>

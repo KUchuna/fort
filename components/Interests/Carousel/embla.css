@@ -122,9 +122,13 @@
 /* Open State Specifics */
 .open .card-content {
   width: 60%;
-  height: 100%;
+  height: 50%;
   pointer-events: auto; /* Re-enable clicks */
   border-radius: 20px;
+}
+
+.card-image {
+  object-fit: cover;
 }
 
 /* Image Container */
