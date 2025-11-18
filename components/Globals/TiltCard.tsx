@@ -12,8 +12,7 @@ interface TiltCardProps {
 
 const TiltCard: FC<TiltCardProps> = ({
   children,
-  className = "",
-  maxTilt = 20,
+  maxTilt = 12,
   perspective = 1000,
 }) => {
   // motion values centered at 0 (0 = center)
@@ -54,7 +53,7 @@ const TiltCard: FC<TiltCardProps> = ({
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       style={{ perspective }}
-      className={`will-change-transform ${className}`} // keep classes customizable
+      className={`will-change-transform`} // keep classes customizable
     >
       <motion.div
         // apply 3D rotations on the inner element
@@ -64,7 +63,7 @@ const TiltCard: FC<TiltCardProps> = ({
           transformStyle: "preserve-3d",
         }}
         whileTap={{ scale: 0.98 }}
-        className="transform-gpu" // ensures GPU-accelerated transforms
+        className="transform-gpu bg-main rounded-[20px]" // ensures GPU-accelerated transforms
       >
         {children}
       </motion.div>
