@@ -4,7 +4,38 @@ import './embla.css'
 import EmblaCarousel from './EmblaCarousel'
 
 const SLIDE_COUNT = 5
-const SLIDES = Array.from(Array(SLIDE_COUNT).keys())
+const SLIDES = [
+    {
+        id: 1,
+        image: '/images/interests/music.jpg',
+        title: "Music",
+        description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Placeat explicabo, quisquam commodi nemo doloremque ullam? Eius nostrum placeat maiores"
+    },
+    {
+        id: 2,
+        image: '/images/interests/travel.jpg',
+        title: "Travel",
+        description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Placeat explicabo, quisquam commodi nemo doloremque ullam? Eius nostrum placeat maiores"
+    },
+    {
+        id: 3,
+        image: '/images/interests/music.jpg',
+        title: "Music",
+        description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Placeat explicabo, quisquam commodi nemo doloremque ullam? Eius nostrum placeat maiores"
+    },
+    {
+        id: 4,
+        image: '/images/interests/music.jpg',
+        title: "Music",
+        description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Placeat explicabo, quisquam commodi nemo doloremque ullam? Eius nostrum placeat maiores"
+    },
+    {
+        id: 5,
+        image: '/images/interests/music.jpg',
+        title: "Music",
+        description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Placeat explicabo, quisquam commodi nemo doloremque ullam? Eius nostrum placeat maiores"
+    },
+]
 
 export default function EmblaContainer() {
     return (

@@ -13,8 +13,15 @@ import { motion, AnimatePresence } from "framer-motion"
 import Image from 'next/image'
 import temp from "@/public/images/interests.png"
 
+interface Slide {
+  id: number;
+  image: string;
+  title: string;
+  description: string;
+} 
+
 type PropType = {
-  slides: number[]
+  slides: Slide[]
   options?: EmblaOptionsType
 }
 
@@ -33,35 +40,39 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
     onNextButtonClick
   } = usePrevNextButtons(emblaApi)
 
+  const selectedSlide = slides.find(slide => slide.id === selectedId)
+
 
   return (
     <section className="embla relative">
       <div className="embla__viewport" ref={emblaRef}>
         <div className="embla__container">
-          {slides.map((index) => (
-            <div className="embla__slide" key={index}>
-              <div onClick={() => setSelectedId(index)} className="cursor-pointer h-full">
+          {slides.map((slide) => (
+            <div className="embla__slide" key={slide.id}>
+              <div onClick={() => setSelectedId(slide.id)} className="cursor-pointer h-full">
                 <TiltCard>
                   <motion.div
                     className="relative w-full h-69 rounded-xl overflow-hidden"
-                    layoutId={`card-container-${index}`}
+                    layoutId={`card-container-${slide.id}`}
                   >
                     <motion.div
-                      layoutId={`card-image-container-${index}`}
+                      layoutId={`card-image-container-${slide.id}`}
                       className="absolute inset-0"
                     >                      
                     <MotionImage
-                        src={temp}
-                        alt={`Card ${index}`}
+                        src={slide.image}
+                        alt={`Card ${slide.id}`}
                         className='w-full h-full'
                         priority 
+                        width={1000}
+                        height={1000}
                       />
                     </motion.div>
 
                     <motion.div
                         className="absolute bottom-0 left-0 p-4"
                     >
-                        <h2 className="text-white font-bold">Card {index+1}</h2>
+                        <h2 className="text-white font-bold">{slide.title}</h2>
                     </motion.div>
                   </motion.div>
                 </TiltCard>
@@ -97,7 +108,7 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
             {/* The Expanded Card */}
             <motion.div
               layoutId={`card-container-${selectedId}`}
-              className="relative w-full h-max max-w-[45%] bg-accent rounded-2xl overflow-hidden shadow-2xl flex flex-col pointer-events-auto"
+              className="relative w-full h-max max-w-[45%] bg-black rounded-2xl overflow-hidden shadow-2xl flex flex-col pointer-events-auto"
               transition={{
                 layout: { type: "spring", stiffness: 300, damping: 40 },
               }}
@@ -111,7 +122,7 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
                 }}
               >
                 <MotionImage
-                  src={temp}
+                  src={selectedSlide?.image}
                   alt={`Card ${selectedId}`}
                   className="w-full h-full origin-top-left" 
                   priority
@@ -122,6 +133,8 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
                     duration: 0.6,
                     ease: "easeInOut",
                   }}
+                  width={1000}
+                  height={1000}
                 />
               </motion.div>
 
