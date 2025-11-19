@@ -3,7 +3,6 @@
 import './embla.css'
 import EmblaCarousel from './EmblaCarousel'
 
-const SLIDE_COUNT = 5
 const SLIDES = [
     {
         id: 1,

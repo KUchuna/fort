@@ -11,7 +11,6 @@ import useEmblaCarousel from 'embla-carousel-react'
 import TiltCard from '@/components/Globals/TiltCard'
 import { motion, AnimatePresence } from "framer-motion"
 import Image from 'next/image'
-import temp from "@/public/images/interests.png"
 
 interface Slide {
   id: number;
@@ -55,24 +54,23 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
                     className="relative w-full h-69 rounded-xl overflow-hidden"
                     layoutId={`card-container-${slide.id}`}
                   >
+                  {/* Image */}
                     <motion.div
                       layoutId={`card-image-container-${slide.id}`}
-                      className="absolute inset-0"
-                    >                      
-                    <MotionImage
+                      className="absolute inset-0 z-10"
+                    >
+                      <MotionImage
                         src={slide.image}
                         alt={`Card ${slide.id}`}
-                        className='w-full h-full'
-                        priority 
+                        className="w-full h-full object-cover"
+                        priority
                         width={1000}
                         height={1000}
                       />
                     </motion.div>
-
-                    <motion.div
-                        className="absolute bottom-0 left-0 p-4"
-                    >
-                        <h2 className="text-white font-bold">{slide.title}</h2>
+                  {/* Title */}
+                    <motion.div className="absolute bottom-0 left-0 p-4 z-30">
+                      <h2 className="text-white font-bold">{slide.title}</h2>
                     </motion.div>
                   </motion.div>
                 </TiltCard>
