@@ -79,10 +79,11 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
       </div>
 
       {/* 2. The Expanded Overlay */}
-      <AnimatePresence>
+      <AnimatePresence >
         {selectedId !== null && (
           <motion.div 
             className="fixed inset-0 z-50 flex items-start justify-center pt-6 pointer-events-none"
+            key={selectedId}
           >
             {/* Backdrop */}
             <motion.div
@@ -100,7 +101,6 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
               transition={{
                 layout: { type: "spring", stiffness: 300, damping: 40 },
               }}
-              exit={{scale: 0.7, transition: {duration: 0.1}}}
             >
               {/* Image Container for the expanded card */}
               <motion.div
@@ -113,7 +113,7 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
                 <MotionImage
                   src={temp}
                   alt={`Card ${selectedId}`}
-                  className="w-full h-full object-top-left origin-top-left" 
+                  className="w-full h-full origin-top-left" 
                   priority
                   initial={{ scale: 1 }}    // Start normal
                   animate={{ scale: 1.3 }}  // Zoom in on open
