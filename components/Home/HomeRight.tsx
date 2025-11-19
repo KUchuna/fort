@@ -22,7 +22,7 @@ export default function HomeRight() {
                             group-hover:rotate-45"
                         />
                     </div>
-                    <Image src={interests} alt=" interests" width={1000} height={1000} className="w-full rounded-[20px] transition-all duration-300 group-hover:scale-[1.05]" />
+                    <Image src={interests} alt=" interests" width={2000} height={2000} priority className="w-full rounded-[20px] transition-all duration-300 group-hover:scale-[1.05]" />
                 </Link>
                 <ul className="flex flex-col gap-6">
                     {[1,2,3].map((item) => (

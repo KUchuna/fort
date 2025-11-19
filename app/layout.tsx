@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import localFont from "next/font/local";
 import Header from "@/components/Globals/Header";
+import Loader from "@/components/Globals/Loader";
 
 export const gilroy = localFont({
   src: [
@@ -37,7 +38,9 @@ export default function RootLayout({
     <html lang="en" className={`bg-background ${gilroy.variable} h-full`}>
       <body className="p-6 h-full">
         <Header/>
-        {children}
+        <Loader>
+          {children}
+        </Loader>
       </body>
     </html>
   );
