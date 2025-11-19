@@ -4,21 +4,22 @@
   --slide-height: 19rem;
   --slide-spacing: 2rem;
   --slide-size: 30%;
-  user-select: none;
 }
 .embla__viewport {
-  overflow: hidden;
-  padding: 24px;
+    overflow-x: hidden;
+    padding: 24px;
+    background-color: red;
 }
 .embla__container {
   display: flex;
   touch-action: pan-y pinch-zoom;
-  gap: 26px;
+  margin-left: calc(var(--slide-spacing) * -1);
 }
 .embla__slide {
   transform: translate3d(0, 0, 0);
   flex: 0 0 var(--slide-size);
   min-width: 0;
+  padding-left: var(--slide-spacing);
 }
 .embla__slide__number {
   box-shadow: inset 0 0 0 0.2rem var(--detail-medium-contrast);
@@ -81,113 +82,4 @@
 .embla__button__svg {
   width: 35%;
   height: 35%;
-}
-
-.overlay {
-  z-index: 900;
-  position: fixed;
-  background: rgba(0, 0, 0, 0.8);
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  height: 100%;
-}
-
-/* The Wrapper for the Open Card */
-.card-content-container.open {
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  position: fixed;
-  z-index: 1000;
-  display: flex;
-  justify-content: center;
-  padding: 40px 0; /* Space at top/bottom */
-  pointer-events: none; /* Let clicks pass to overlay */
-}
-
-/* The Card Itself (Moving Part) */
-.card-content {
-  background: var(--color-accent);
-  border-radius: 20px;
-  overflow: hidden;
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-/* Open State Specifics */
-.open .card-content {
-  width: 60%;
-  height: 50%;
-  pointer-events: auto; /* Re-enable clicks */
-  border-radius: 20px;
-}
-
-.card-image {
-  object-fit: cover;
-}
-
-/* Image Container */
-.card-image-container {
-  position: absolute;
-  top: 0;
-  left: 0;
-  overflow: hidden;
-  /* THUMBNAIL HEIGHT */
-  height: 300px; 
-  width: 100%;
-  z-index: 1;
-}
-
-/* OPEN STATE Image Height */
-.open .card-image-container {
-  /* EXPANDED HEIGHT - Matches Reference */
-  height: 420px; 
-  width: 100%;
-  z-index: 1;
-}
-
-/* Title Positioning */
-.title-container {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  max-width: 300px;
-  z-index: 2; /* Above image */
-}
-
-.open .title-container {
-  top: 30px;
-  left: 30px;
-}
-
-/* Text Content */
-.content-container {
-  /* CRITICAL: This padding pushes the text below the absolute image */
-  padding: 460px 35px 35px 35px; 
-  width: 100%;
-}
-
-/* Typography */
-.category {
-  color: #fff;
-  font-size: 14px;
-  text-transform: uppercase;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.card-title {
-  color: #fff;
-  margin: 0;
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.open .card-title {
-  font-size: 36px; /* Grow title on expand */
 }

@@ -1,150 +1,141 @@
 "use client"
 
-import React, { useState } from "react"
-import { EmblaOptionsType } from "embla-carousel"
-import { PrevButton, NextButton, usePrevNextButtons } from "./EmblaCarouselArrowButtons"
-import useEmblaCarousel from "embla-carousel-react"
-import TiltCard from "@/components/Globals/TiltCard"
+import React, { useState } from 'react'
+import { EmblaOptionsType } from 'embla-carousel'
+import {
+  PrevButton,
+  NextButton,
+  usePrevNextButtons
+} from './EmblaCarouselArrowButtons'
+import useEmblaCarousel from 'embla-carousel-react'
+import TiltCard from '@/components/Globals/TiltCard'
 import { motion, AnimatePresence } from "framer-motion"
+import Image from 'next/image'
 import temp from "@/public/images/interests.png"
-import Image from "next/image"
-
-type SlideType = {
-  id: number
-  title: string
-  category: string
-}
 
 type PropType = {
-  slides: SlideType[]
+  slides: number[]
   options?: EmblaOptionsType
 }
 
-const EmblaCarousel: React.FC<PropType> = ({ slides, options }) => {
+const MotionImage = motion(Image);
+
+const EmblaCarousel: React.FC<PropType> = (props) => {
+  const { slides, options } = props
   const [emblaRef, emblaApi] = useEmblaCarousel(options)
-  const { prevBtnDisabled, nextBtnDisabled, onPrevButtonClick, onNextButtonClick } = usePrevNextButtons(emblaApi)
 
   const [selectedId, setSelectedId] = useState<number | null>(null)
-  const selectedCard = slides.find((s) => s.id === selectedId)
+
+  const {
+    prevBtnDisabled,
+    nextBtnDisabled,
+    onPrevButtonClick,
+    onNextButtonClick
+  } = usePrevNextButtons(emblaApi)
+
 
   return (
-    <section className="embla">
-      {/* Carousel Viewport */}
+    <section className="embla relative">
       <div className="embla__viewport" ref={emblaRef}>
         <div className="embla__container">
-          {slides.map((slide) => (
-            <motion.div
-              className="embla__slide"
-              key={slide.id}
-              layoutId={`card-container-${slide.id}`}
-              onClick={() => setSelectedId(slide.id)}
-              style={{ cursor: "pointer" }}
-              initial={{ borderRadius: "20px" }}
-            >
-              <TiltCard>
-                <motion.div 
-                  className="card-content" 
-                  style={{ height: "300px" }} // Thumbnail height
-                >
-                  <motion.div 
-                    className="card-image-container" 
-                    layoutId={`card-image-container-${slide.id}`}
+          {slides.map((index) => (
+            <div className="embla__slide" key={index}>
+              <div onClick={() => setSelectedId(index)} className="cursor-pointer h-full">
+                <TiltCard>
+                  <motion.div
+                    className="relative w-full h-69 rounded-xl overflow-hidden"
+                    layoutId={`card-container-${index}`}
                   >
-                    <Image
-                      className="card-image"
-                      src={temp}
-                      alt={slide.title}
-                      fill
-                      priority
-                    />
-                  </motion.div>
+                    <motion.div
+                      layoutId={`card-image-container-${index}`}
+                      className="absolute inset-0"
+                    >                      
+                    <MotionImage
+                        src={temp}
+                        alt={`Card ${index}`}
+                        className='w-full h-full'
+                        priority 
+                      />
+                    </motion.div>
 
-                  <motion.div 
-                    className="title-container" 
-                    layoutId={`title-container-${slide.id}`}
-                  >
-                    <span className="category">{slide.category}</span>
-                    <h2 className="card-title">{slide.title}</h2>
+                    <motion.div
+                        className="absolute bottom-0 left-0 p-4"
+                    >
+                        <h2 className="text-white font-bold">Card {index+1}</h2>
+                    </motion.div>
                   </motion.div>
-                </motion.div>
-              </TiltCard>
-            </motion.div>
+                </TiltCard>
+              </div>
+            </div>
           ))}
         </div>
       </div>
 
-      <div className="embla__controls">
-        <div className="embla__buttons">
+      <div className="embla__controls mt-4">
+        <div className="embla__buttons flex gap-2">
           <PrevButton onClick={onPrevButtonClick} disabled={prevBtnDisabled} />
           <NextButton onClick={onNextButtonClick} disabled={nextBtnDisabled} />
         </div>
       </div>
 
-      {/* EXPANDED VIEW */}
+      {/* 2. The Expanded Overlay */}
       <AnimatePresence>
-        {selectedId !== null && selectedCard && (
-          <>
+        {selectedId !== null && (
+          <motion.div 
+            className="fixed inset-0 z-50 flex items-start justify-center pt-6 pointer-events-none"
+          >
+            {/* Backdrop */}
             <motion.div
-              className="overlay"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedId(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto"
             />
 
-            <div className="card-content-container open">
+            {/* The Expanded Card */}
+            <motion.div
+              layoutId={`card-container-${selectedId}`}
+              className="relative w-full h-max max-w-[45%] bg-accent rounded-2xl overflow-hidden shadow-2xl flex flex-col pointer-events-auto"
+              transition={{
+                layout: { type: "spring", stiffness: 300, damping: 40 },
+              }}
+              exit={{scale: 0.7, transition: {duration: 0.1}}}
+            >
+              {/* Image Container for the expanded card */}
               <motion.div
-                className="card-content"
-                layoutId={`card-container-${selectedId}`}
-                style={{ 
-                    borderRadius: "20px", 
-                    overflow: "hidden", 
+                layoutId={`card-image-container-${selectedId}`}
+                className="w-full relative shrink-0 overflow-hidden"
+                transition={{
+                  layout: { type: "spring", stiffness: 300, damping: 30 },
                 }}
               >
-                <motion.div
-                  className="card-image-container"
-                  layoutId={`card-image-container-${selectedId}`}
-                >
-                  <Image
-                    className="card-image"
-                    src={temp}
-                    alt={selectedCard.title}
-                    fill
-                    priority
-                  />
-                </motion.div>
-
-                {/* TITLE */}
-                <motion.div
-                  className="title-container"
-                  layoutId={`title-container-${selectedId}`}
-                >
-                  <span className="category">{selectedCard.category}</span>
-                  <h2 className="card-title">{selectedCard.title}</h2>
-                </motion.div>
-
-                {/* TEXT CONTENT */}
-                <motion.div
-                  className="content-container"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2, delay: 0.1 }}
-                >
-                  <p>
-                    The image is fixed at the top, and this text is pushed down by padding. 
-                  </p>
-                  <p>
-                     Because we added `overflowY: auto` to the parent motion div, 
-                     you can now scroll this text, and the rounded corners will stay fixed!
-                  </p>
-                  <p>
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-                  </p>
-                </motion.div>
+                <MotionImage
+                  src={temp}
+                  alt={`Card ${selectedId}`}
+                  className="w-full h-full object-top-left origin-top-left" 
+                  priority
+                  initial={{ scale: 1 }}    // Start normal
+                  animate={{ scale: 1.3 }}  // Zoom in on open
+                  exit={{ scale: 1 }}       // Zoom back out on close
+                  transition={{
+                    duration: 0.6,
+                    ease: "easeInOut",
+                  }}
+                />
               </motion.div>
-            </div>
-          </>
+
+              <div className="p-6 text-white">
+                <h2 className="text-3xl font-bold mb-4">Expanded Card Title {selectedId}</h2>
+                <p className="leading-relaxed text-sm">
+                  This is a short description of the card. It provides just enough detail
+                  to inform the user without overwhelming them. We've limited the content
+                  to ensure it fits nicely without needing a scrollbar, creating a cleaner
+                  and more focused presentation.
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </section>

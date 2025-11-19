@@ -63,7 +63,7 @@ const TiltCard: FC<TiltCardProps> = ({
           transformStyle: "preserve-3d",
         }}
         whileTap={{ scale: 0.98 }}
-        className="transform-gpu bg-main rounded-[20px]" // ensures GPU-accelerated transforms
+        className="transform-gpu overflow-hidden rounded-[20px]" // ensures GPU-accelerated transforms
       >
         {children}
       </motion.div>
