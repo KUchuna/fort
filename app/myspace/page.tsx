@@ -1,4 +1,5 @@
 import CurrentObsession from "@/components/MySpace/CurrentObsession";
+import SpotifyPlayer from "@/components/MySpace/SpotifyPlayer";
 
 export default function MySpace() {
   return (
@@ -7,6 +8,7 @@ export default function MySpace() {
       <p className="italic  mb-4">This is your private space, which only you can access.</p>
       <hr></hr>
       <CurrentObsession />
+      <SpotifyPlayer />
     </main>
   );
 }

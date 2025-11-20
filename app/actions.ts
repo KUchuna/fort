@@ -26,3 +26,44 @@ export async function addObsession(formData: FormData) {
 
     revalidatePath("/");
 }
+
+
+export async function getAccessToken() {
+  const refresh_token = process.env.SPOTIFY_REFRESH_TOKEN;
+  const client_id = process.env.SPOTIFY_CLIENT_ID;
+  const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
+
+  const basic = Buffer.from(`${client_id}:${client_secret}`).toString('base64');
+
+  const response = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${basic}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refresh_token!,
+    }),
+    cache: 'no-store',
+  });
+
+  const data = await response.json();
+  return data.access_token;
+}
+
+export async function transferPlayback(deviceId: string) {
+  const token = await getAccessToken();
+  
+  await fetch('https://api.spotify.com/v1/me/player', {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      device_ids: [deviceId],
+      play: true, // Auto-play upon transfer
+    }),
+  });
+}
