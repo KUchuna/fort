@@ -21,7 +21,7 @@
 .custom-scrollbar {
   /* Firefox */
   scrollbar-width: thin;
-  scrollbar-color: #ec4899 transparent; /* Pink thumb, Transparent track */
+  scrollbar-color: #1DB954 transparent; /* Pink thumb, Transparent track */
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -34,7 +34,7 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #ec4899; /* Pink color */
+  background-color: #1DB954; /* Pink color */
   border-radius: 9999px; /* Fully rounded */
 }
 

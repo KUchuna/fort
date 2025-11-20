@@ -5,12 +5,24 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { getAccessToken, transferPlayback } from '@/app/actions'
+import { 
+  getAccessToken, 
+  transferPlayback, 
+  searchSpotify, 
+  getUserPlaylists, 
+  getPlaylistDetails, 
+  startPlayback,
+  toggleShuffle,
+  setRepeatMode
+} from '@/app/actions'
 
+// --- Interfaces ---
 interface SpotifyImage { url: string }
 interface SpotifyArtist { name: string }
-interface SpotifyAlbum { images: SpotifyImage[] }
+interface SpotifyAlbum { images: SpotifyImage[]; name: string }
 interface SpotifyTrack {
+  id?: string;
+  uri?: string;
   name: string
   album: SpotifyAlbum
   artists: SpotifyArtist[]
@@ -21,6 +33,17 @@ interface PlayerState {
   position: number
   duration: number
   track_window: { current_track: SpotifyTrack }
+  shuffle: boolean
+  repeat_mode: 0 | 1 | 2 
+}
+
+interface Playlist {
+  id: string;
+  name: string;
+  images: SpotifyImage[];
+  uri: string;
+  href: string;
+  tracks: { total: number };
 }
 
 const formatTime = (ms: number) => {
@@ -31,12 +54,29 @@ const formatTime = (ms: number) => {
 
 const TRACK_INITIAL_STATE: SpotifyTrack = {
   name: "",
-  album: { images: [{ url: "" }] },
+  album: { images: [{ url: "" }], name: "" },
   artists: [{ name: "" }],
   duration_ms: 0
 }
 
 export default function SpotifyPlayer() {
+
+useEffect(() => {
+    // Check if the page has been loaded via soft-navigation (Next.js Link)
+    // If performance.navigation.type is not "navigate" (0) or "reload" (1), or just force it:
+    
+    const hasReloaded = sessionStorage.getItem('page_reloaded');
+    
+    if (!hasReloaded) {
+      sessionStorage.setItem('page_reloaded', 'true');
+      window.location.reload();
+    } else {
+      // Clear it so it reloads next time you visit
+      return () => sessionStorage.removeItem('page_reloaded');
+    }
+  }, []);
+
+  // --- State ---
   const [player, setPlayer] = useState<Spotify.Player | null>(null)
   const [isPaused, setIsPaused] = useState(false)
   const [currentTrack, setCurrentTrack] = useState<SpotifyTrack>(TRACK_INITIAL_STATE)
@@ -48,10 +88,42 @@ export default function SpotifyPlayer() {
   const [isActive, setIsActive] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // --- Feature State ---
+  const [view, setView] = useState<'search' | 'playlists' | 'playlist-detail'>('search')
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([])
+  const [playlists, setPlaylists] = useState<Playlist[]>([])
+  const [selectedPlaylist, setSelectedPlaylist] = useState<{ info: Playlist, tracks: SpotifyTrack[] } | null>(null)
+  const [shuffleState, setShuffleState] = useState(false)
+  const [repeatState, setRepeatState] = useState<0 | 1 | 2>(0)
+
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null)
   const seekDebounceRef = useRef<NodeJS.Timeout | null>(null)
   const playerRef = useRef<Spotify.Player | null>(null)
+  
+  // NEW: Debounce Ref
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
+  // --- Helper: Update State ---
+  const updateState = (state: PlayerState) => {
+    setCurrentTrack(state.track_window.current_track)
+    setIsPaused(state.paused)
+    setDuration(state.duration)
+    setPosition(state.position)
+    setShuffleState(state.shuffle)
+    setRepeatState(state.repeat_mode)
+  }
+
+  // --- 1. Load Playlists Independently ---
+  useEffect(() => {
+    getUserPlaylists()
+      .then(data => {
+         if(data.items) setPlaylists(data.items)
+      })
+      .catch(err => console.error("Failed to load playlists", err));
+  }, []);
+
+  // --- 2. Initialize Player ---
   const initializePlayer = useCallback(async () => {
     if (playerRef.current) {
       setPlayer(playerRef.current)
@@ -65,11 +137,10 @@ export default function SpotifyPlayer() {
           const token = await getAccessToken()
           cb(token)
         } catch (err) {
-          setError("Failed to get access token")
           console.error(err)
         }
       },
-      volume
+      volume: 0.5
     })
 
     playerRef.current = spotifyPlayer
@@ -82,10 +153,7 @@ export default function SpotifyPlayer() {
 
       spotifyPlayer.getCurrentState().then(state => {
         if (state) {
-          setCurrentTrack(state.track_window.current_track)
-          setIsPaused(state.paused)
-          setDuration(state.duration)
-          setPosition(state.position)
+          updateState(state)
           setIsActive(true)
         }
       })
@@ -93,10 +161,7 @@ export default function SpotifyPlayer() {
 
     spotifyPlayer.addListener('player_state_changed', (state: PlayerState | null) => {
       if (!state) return
-      setCurrentTrack(state.track_window.current_track)
-      setIsPaused(state.paused)
-      setDuration(state.duration)
-      setPosition(state.position)
+      updateState(state)
       setIsActive(true)
     })
 
@@ -106,34 +171,72 @@ export default function SpotifyPlayer() {
 
     const connected = await spotifyPlayer.connect()
     if (!connected) setError('Failed to connect to Spotify')
-  }, [volume])
+  }, [])
 
+  // --- 3. Load SDK & Handle Re-Mount ---
   useEffect(() => {
+    let isMounted = true;
+
+    const initializePlayer = async () => {
+      // 1. SAFETY DELAY: Wait 100ms for any old players to fully disconnect
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (!isMounted) return; // Stop if user left the page during the delay
+
+      const spotifyPlayer = new window.Spotify.Player({
+        name: 'My Personal Page',
+        getOAuthToken: async (cb) => { 
+          try {
+            const token = await getAccessToken()
+            cb(token)
+          } catch (err) { console.error(err) }
+        },
+        volume: 0.5
+      })
+
+      playerRef.current = spotifyPlayer
+      setPlayer(spotifyPlayer)
+
+      spotifyPlayer.addListener('ready', ({ device_id }) => {
+        if (!isMounted) return;
+        console.log('Device Ready:', device_id)
+        setDeviceId(device_id)
+        setError(null) 
+      })
+
+      spotifyPlayer.addListener('player_state_changed', (state) => {
+        if (!isMounted || !state) return;
+        updateState(state)
+        setIsActive(true)
+      })
+
+      spotifyPlayer.addListener('initialization_error', ({ message }) => console.error(message))
+      spotifyPlayer.addListener('authentication_error', ({ message }) => console.error(message))
+      spotifyPlayer.addListener('account_error', ({ message }) => console.error(message))
+
+      spotifyPlayer.connect()
+    }
+
     if (window.Spotify) {
       initializePlayer()
     } else {
+      window.onSpotifyWebPlaybackSDKReady = initializePlayer
       const script = document.createElement("script")
       script.src = "https://sdk.scdn.co/spotify-player.js"
       script.async = true
-      script.onerror = () => setError("Failed to load Spotify SDK")
       document.body.appendChild(script)
-      window.onSpotifyWebPlaybackSDKReady = initializePlayer
     }
 
-    if (playerRef.current) {
-      playerRef.current.getCurrentState().then(state => {
-        if (state) {
-          setCurrentTrack(state.track_window.current_track)
-          setIsPaused(state.paused)
-          setDuration(state.duration)
-          setPosition(state.position)
-          setDeviceId((playerRef.current! as any)._options.id || "")
-          setIsActive(true)
-        }
-      })
+    // CLEANUP: This runs instantly when you leave the page
+    return () => {
+      isMounted = false;
+      if (playerRef.current) {
+        playerRef.current.disconnect();
+      }
     }
-  }, [initializePlayer])
+  }, [])
 
+  // --- 4. Progress Interval ---
   useEffect(() => {
     if (progressTimerRef.current) clearInterval(progressTimerRef.current)
     if (!isPaused && player) {
@@ -144,6 +247,109 @@ export default function SpotifyPlayer() {
     return () => { if (progressTimerRef.current) clearInterval(progressTimerRef.current) }
   }, [isPaused, duration, player])
 
+
+  // --- Handlers ---
+  
+  // NEW: Debounced Search Handler
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setSearchQuery(val)
+
+    // Clear existing timer
+    if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+    }
+
+    if (val.trim().length === 0) {
+      setSearchResults([])
+      return
+    }
+
+    // Set new timer (500ms debounce)
+    searchTimeoutRef.current = setTimeout(async () => {
+        try {
+            const data = await searchSpotify(val)
+            setSearchResults(data.tracks?.items || [])
+        } catch (err) { console.error(err) }
+    }, 500)
+  }
+
+  const handlePlayTrack = async (trackUri: string, contextUri?: string) => {
+    if (!deviceId || !player) {
+      setError("Player loading... please wait.");
+      return;
+    }
+
+    // Helper to try playing
+    const attemptPlay = async () => {
+      await startPlayback(deviceId, contextUri, trackUri);
+    }
+
+    try {
+      // 1. Authorize interaction (Browser requirement)
+      await player.activateElement();
+
+      // 2. Try to play normally
+      try {
+        await attemptPlay();
+      } catch (firstError) {
+        // 3. IF IT FAILS (Common on page reload):
+        // The device exists locally but isn't "Active" on Spotify servers yet.
+        console.warn("First play attempt failed. Activating device...", firstError);
+        
+        // 4. Force a transfer to this device to wake it up
+        await transferPlayback(deviceId);
+        
+        // 5. Wait 500ms for the transfer to register
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // 6. Try playing again
+        await attemptPlay();
+      }
+
+      // Success!
+      setIsActive(true);
+      setIsPaused(false);
+      setError(null);
+
+    } catch (finalError: any) {
+      console.error("Playback failed after retry", finalError);
+      setError("Could not play. Please click 'Connect Player' manually if this persists.");
+    }
+  }
+
+  const handleOpenPlaylist = async (playlist: Playlist) => {
+    try {
+      const details = await getPlaylistDetails(playlist.href)
+      const tracks = details.tracks.items.map((item: any) => item.track).filter((t: any) => t)
+      setSelectedPlaylist({ info: playlist, tracks })
+      setView('playlist-detail')
+    } catch (err) { console.error(err) }
+  }
+
+ const handleToggleShuffle = async () => {
+      // 1. Optimistic Update (Change UI immediately)
+      const oldState = shuffleState;
+      const newState = !oldState;
+      setShuffleState(newState);
+
+      try {
+          // 2. Call API
+          await toggleShuffle(deviceId, newState);
+      } catch (err) {
+          // 3. Revert if it failed
+          console.error(err);
+          setShuffleState(oldState);
+      }
+  }
+
+  const handleToggleRepeat = async () => {
+      const nextState = repeatState === 0 ? 1 : repeatState === 1 ? 2 : 0;
+      setRepeatState(nextState)
+      const stateStr = nextState === 1 ? 'context' : nextState === 2 ? 'track' : 'off';
+      await setRepeatMode(deviceId, stateStr)
+  }
+
   const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (!player) return
     const newPos = Number(e.target.value)
@@ -153,42 +359,49 @@ export default function SpotifyPlayer() {
   }, [player])
 
   const handleVolume = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!player) return
-    const vol = Number(e.target.value)
-    setVolume(vol)
-    player.setVolume(vol)
-  }, [player])
+    if (!player) return;
+    const vol = Number(e.target.value);
+    setVolume(vol); 
+    player.setVolume(vol);
+  }, [player]);
 
   const handlePrevious = useCallback(() => player?.previousTrack(), [player])
   const handleTogglePlay = useCallback(() => player?.togglePlay(), [player])
   const handleNext = useCallback(() => player?.nextTrack(), [player])
 
-  const handleTransfer = useCallback(async () => {
+
+
+const handleTransfer = useCallback(async () => {
     if (!deviceId || !player) {
       setError("Device not ready yet")
       return
     }
     setIsLoading(true)
     setError(null)
+    
     try {
+    
+      await player.activateElement();
+
+     
       await transferPlayback(deviceId)
+      
+    
       const state = await player.getCurrentState()
       if (state) {
-        setCurrentTrack(state.track_window.current_track)
-        setIsPaused(state.paused)
-        setDuration(state.duration)
-        setPosition(state.position)
-        setIsActive(true)
+          updateState(state)
+          setIsActive(true)
       }
     } catch (err: any) {
       console.error(err)
-      setError("Failed to transfer playback. Make sure Spotify is playing somewhere else first.")
+      setError("Transfer failed. Try playing a song directly from the list below.")
     } finally {
       setIsLoading(false)
     }
-  }, [deviceId, player])
+}, [deviceId, player])
 
-  // Error UI
+
+ 
   if (error) return (
     <div className="flex flex-col items-center justify-center p-6 bg-red-950/80 backdrop-blur-md rounded-2xl border border-red-800 w-full max-w-md text-center">
       <h3 className="text-white font-bold mb-2">Error</h3>
@@ -199,139 +412,207 @@ export default function SpotifyPlayer() {
     </div>
   )
 
-  // Show Connect Player if player exists but not active
-  if (!isActive) {
-    return (
-      <div className="flex flex-col items-center justify-start h-fit mt-6 p-6 bg-[#181818] rounded-[20px] text-center shadow-lg border border-white/5 selection:bg-green-400">
-        <div className="mb-4 text-[#1DB954]">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.66.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.4-1.02 15.6 1.44.54.3.719.96.42 1.5-.239.479-.899.66-1.44.36z"/>
-          </svg>
-        </div>
 
-        <h3 className="text-white font-bold text-lg mb-2 tracking-tight">Ready to Play</h3>
-        <p className="text-[#A7A7A7] text-sm mb-6 max-w-[250px] leading-relaxed selection:text-white">
-          {deviceId ? "Click below to transfer playback to this device." : "Connecting to Spotify..."}
-        </p>
-
-        <button 
-          onClick={handleTransfer}
-          disabled={isLoading || !deviceId}
-          className="px-8 py-3 bg-[#1DB954] text-black rounded-full font-bold text-sm tracking-wide transition-transform duration-100 hover:scale-105 hover:bg-[#1ed760] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:bg-[#1DB954]"
-          aria-label="Connect to Spotify player"
-        >
-          {isLoading ? 'CONNECTING...' : deviceId ? 'CONNECT PLAYER' : 'INITIALIZING...'}
-        </button>
-      </div>
-    )
-  }
 
   const hasAlbumArt = currentTrack.album.images[0]?.url
   const progressPercent = duration ? (position / duration) * 100 : 0
 
-  return (
-    <div className="max-w-[400px] w-full flex flex-col h-fit mt-6 p-5 rounded-[20px] bg-[#181818] shadow-xl overflow-hidden relative border border-[#282828]">
-      
-      {/* Top Section: Art & Title */}
-      <div className="flex items-center gap-4 mb-6">
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }} 
-          animate={{ scale: 1, opacity: 1 }}
-          className="relative w-20 h-20 rounded-lg overflow-hidden shadow-lg shrink-0 bg-[#282828] group"
-        >
-          {hasAlbumArt ? (
-            <Image src={hasAlbumArt} alt="Album Art" fill className="object-cover" sizes="56px" priority />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-[#b3b3b3]">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.6 0 12 0zm0 17.15c-3.45 0-6.35-2.35-7.5-5.65-.2-.55.1-1.15.65-1.35.55-.2 1.15.1 1.35.65.8 2.3 2.85 3.95 5.5 3.95s4.7-1.65 5.5-3.95c.2-.55.8-.85 1.35-.65.55.2.85.8.65 1.35-1.15 3.3-4.05 5.65-7.5 5.65zM12 6.85c3.45 0 6.35 2.35 7.5 5.65.2.55-.1 1.15-.65 1.35-.55.2-1.15-.1-1.35-.65-.8-2.3-2.85-3.95-5.5-3.95s-4.7 1.65-5.5 3.95c-.2.55-.8.85-1.35.65-.55-.2-.85-.8-.65-1.35 1.15-3.3 4.05-5.65 7.5-5.65z"/></svg>
-            </div>
-          )}
-        </motion.div>
-        
-        <div className="flex-1 min-w-0 overflow-hidden flex flex-col justify-center">
-          <motion.h3 
-            key={currentTrack.name} 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }}
-            className="font-bold text-white text-[15px] truncate hover:underline cursor-pointer"
-          >
-            {currentTrack.name || "No track playing"}
-          </motion.h3>
-          <p className="text-[12px] text-[#b3b3b3] truncate hover:text-white hover:underline cursor-pointer transition-colors">
-            {currentTrack.artists[0]?.name || "Unknown artist"}
-          </p>
+ return (
+    <div className="max-w-[400px] w-full flex flex-col gap-4">
+
+      {/* --- 1. Browser/Playlist UI (ALWAYS VISIBLE) --- */}
+      <div className="w-full bg-[#181818] p-4 rounded-[20px] border border-[#282828] h-[250px] flex flex-col mt-6">
+        <div className="flex gap-4 mb-4 border-b border-[#282828] pb-2">
+            <button onClick={() => setView('search')} className={`text-sm font-bold transition ${view === 'search' ? 'text-white' : 'text-[#b3b3b3] hover:text-white'}`}>Search</button>
+            <button onClick={() => setView('playlists')} className={`text-sm font-bold transition ${view.includes('playlist') ? 'text-white' : 'text-[#b3b3b3] hover:text-white'}`}>Playlists</button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2">
+            {view === 'search' && (
+                <>
+                    <input 
+                        type="text" 
+                        placeholder="Search songs..." 
+                        value={searchQuery}
+                        onChange={handleSearch}
+                        className="w-full bg-[#2a2a2a] text-white text-sm rounded-full px-4 py-2 outline-none mb-2 placeholder:text-[#7a7a7a]"
+                    />
+                    <div className="flex flex-col gap-2">
+                        {searchResults.length === 0 && searchQuery.length > 0 && <p className="text-xs text-[#7a7a7a] text-center mt-4">No results found</p>}
+                        {searchResults.map(track => (
+                            <div key={track.id} onClick={() => handlePlayTrack(track.uri!)} className="flex items-center gap-3 p-2 hover:bg-[#282828] rounded-md cursor-pointer group transition">
+                                <div className="w-10 h-10 relative shrink-0 bg-[#333]">
+                                    {track.album.images[0] && <Image src={track.album.images[0].url} fill alt="art" className="object-cover rounded" />}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className={`text-sm truncate ${currentTrack.uri === track.uri ? 'text-[#1DB954]' : 'text-white'}`}>{track.name}</p>
+                                    <p className="text-xs text-[#b3b3b3] truncate">{track.artists[0].name}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {view === 'playlists' && (
+                <div className="flex flex-col gap-2">
+                    {playlists.length === 0 && <p className="text-xs text-[#7a7a7a] text-center mt-4">No playlists found or loading...</p>}
+                    {playlists.map(pl => (
+                         <div key={pl.id} onClick={() => handleOpenPlaylist(pl)} className="flex items-center gap-3 p-2 hover:bg-[#282828] rounded-md cursor-pointer transition">
+                             <div className="w-12 h-12 relative shrink-0 bg-[#333]">
+                                    {pl.images?.[0] && <Image src={pl.images[0].url} fill alt="art" className="object-cover rounded" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm text-white truncate font-medium">{pl.name}</p>
+                                <p className="text-xs text-[#b3b3b3]">{pl.tracks.total} tracks</p>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {view === 'playlist-detail' && selectedPlaylist && (
+                <div className="flex flex-col">
+                      <button onClick={() => setView('playlists')} className="flex items-center gap-1 text-xs text-[#b3b3b3] hover:text-white mb-3 w-fit">
+                        Back to Playlists
+                      </button>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-16 h-16 relative shrink-0 shadow-lg">
+                            {selectedPlaylist.info.images?.[0] && <Image src={selectedPlaylist.info.images[0].url} fill alt="art" className="object-cover rounded-md" />}
+                        </div>
+                        <h3 className="text-white font-bold text-lg truncate">{selectedPlaylist.info.name}</h3>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        {selectedPlaylist.tracks.map((track, idx) => (
+                            <div key={`${track.id}-${idx}`} onClick={() => handlePlayTrack(track.uri!, selectedPlaylist.info.uri)} className="flex items-center gap-3 p-2 hover:bg-[#282828] rounded-md cursor-pointer group transition">
+                                <span className="text-xs text-[#7a7a7a] w-4 text-center group-hover:hidden">{idx + 1}</span>
+                                <span className="text-xs text-white w-4 text-center hidden group-hover:block">▶</span>
+                                <div className="flex-1 min-w-0">
+                                    <p className={`text-sm truncate ${currentTrack.uri === track.uri ? 'text-[#1DB954]' : 'text-white'}`}>{track.name}</p>
+                                    <p className="text-xs text-[#b3b3b3] truncate">{track.artists[0].name}</p>
+                                </div>
+                            </div>
+                        ))}
+                      </div>
+                </div>
+            )}
         </div>
       </div>
 
-      {/* Progress Bar */}
-      <div className="group flex flex-col gap-1 mb-4">
-        <div className="relative w-full h-1 group-hover:h-1.5 transition-all duration-75 rounded-full bg-[#4d4d4d]">
-           {/* Using standard input for interaction, but styled to look like Spotify's custom bar */}
-           <input 
+      {!isActive ? (
+        <div className="w-full h-[150px] flex flex-col items-center justify-center bg-[#181818] rounded-[20px] border border-[#282828] p-6 text-center">
+            <p className="text-[#b3b3b3] text-xs mb-4">Player is ready. Click a song above OR connect manually.</p>
+            <button 
+                onClick={handleTransfer}
+                disabled={isLoading || !deviceId}
+                className={`px-6 py-2 rounded-full font-bold text-xs tracking-wide transition-all 
+                ${(!deviceId) ? 'bg-[#282828] text-[#555] cursor-not-allowed' : 'bg-[#1DB954] text-black hover:scale-105 hover:bg-[#1ed760] active:scale-95'}`}
+            >
+                {isLoading ? 'CONNECTING...' : !deviceId ? 'INITIALIZING...' : 'CONNECT PLAYER'}
+            </button>
+        </div>
+      ) : (
+        <div className="w-full flex flex-col h-fit p-5 rounded-[20px] bg-[#181818] shadow-xl overflow-hidden relative border border-[#282828]">           
+           <div className="flex items-center gap-4 mb-6">
+             <motion.div 
+               initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+               className="relative w-20 h-20 rounded-lg overflow-hidden shadow-lg shrink-0 bg-[#282828] group"
+             >
+               {hasAlbumArt ? (
+                 <Image src={hasAlbumArt} alt="Album Art" fill className="object-cover" sizes="56px" priority />
+               ) : (
+                 <div className="w-full h-full flex items-center justify-center text-[#b3b3b3]">
+                    <div className="w-8 h-8 bg-[#333] rounded-full animate-pulse"></div>
+                 </div>
+               )}
+             </motion.div>
+             
+             <div className="flex-1 min-w-0 overflow-hidden flex flex-col justify-center">
+               <motion.h3 key={currentTrack.name} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-bold text-white text-[15px] truncate hover:underline cursor-pointer">
+                 {currentTrack.name || "No track playing"}
+               </motion.h3>
+               <p className="text-[12px] text-[#b3b3b3] truncate hover:text-white hover:underline cursor-pointer transition-colors">
+                 {currentTrack.artists[0]?.name || "Unknown artist"}
+               </p>
+             </div>
+           </div>
+
+           <div className="group flex flex-col gap-1 mb-4">
+             <div className="relative w-full h-1 rounded-full bg-[#4d4d4d]">
+                <input type="range" min={0} max={duration} value={position} onChange={handleSeek} className="absolute top-0 left-0 w-full h-full opacity-0 z-10 cursor-pointer"/>
+               <div className="h-full rounded-full bg-white group-hover:bg-[#1db954] transition-colors" style={{ width: `${progressPercent}%` }} />
+               <div className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 pointer-events-none" style={{ left: `${progressPercent}%`, marginLeft: '-6px' }} />
+             </div>
+             <div className="flex justify-between text-[11px] text-[#a7a7a7] font-sans mt-1">
+               <span>{formatTime(position)}</span>
+               <span>{formatTime(duration)}</span>
+             </div>
+           </div>
+
+           <div className="flex items-center justify-between">
+             <div className="flex items-center gap-2 w-24 group">
+    <div className="relative w-full h-1 rounded-full bg-[#4d4d4d] flex items-center">
+        {/* The Invisible Slider (Captures Clicks/Drags) */}
+        <input 
             type="range" 
             min={0} 
-            max={duration} 
-            value={position} 
-            onChange={handleSeek}
-            aria-label="Seek track position"
-            className="absolute top-0 left-0 w-full h-full opacity-0 z-10 cursor-pointer"
-          />
-          {/* Visual Progress Bar */}
-          <div 
-            className="h-full rounded-full bg-white group-hover:bg-[#1db954] transition-colors"
-            style={{ width: `${progressPercent}%` }}
-          />
-           {/* The Handle (Only shows on hover) */}
-          <div 
-            className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 pointer-events-none"
-            style={{ left: `${progressPercent}%`, marginLeft: '-6px' }} 
-          />
-        </div>
+            max={1} 
+            step={0.01} 
+            value={volume} 
+            onChange={handleVolume} 
+            className="absolute w-full h-3 opacity-0 z-20 cursor-pointer -top-1" 
+        />
         
-        <div className="flex justify-between text-[11px] text-[#a7a7a7] font-sans mt-1">
-          <span>{formatTime(position)}</span>
-          <span>{formatTime(duration)}</span>
-        </div>
-      </div>
-
-      {/* Controls */}
-      <div className="flex items-center justify-between">
+        {/* The Visual Track (White -> Green on Hover) */}
+        <div 
+            className="h-full rounded-full bg-[#b3b3b3] group-hover:bg-[#1db954] transition-colors z-10" 
+            style={{ width: `${volume * 100}%` }} 
+        />
         
-        {/* Volume */}
-        <div className="flex items-center gap-2 w-24 group">
-          {/* Volume Bar - Logic similar to progress but simpler */}
-          <div className="relative w-full h-1 rounded-full bg-[#4d4d4d] overflow-hidden">
-             <input 
-               type="range" min={0} max={1} step={0.01} value={volume} onChange={handleVolume}
-               className="absolute top-0 left-0 w-full h-full opacity-0 z-10 cursor-pointer" 
-             />
-             <div className="h-full bg-white group-hover:bg-[#1db954] transition-colors" style={{ width: `${volume * 100}%` }} />
-          </div>
-        </div>
+        {/* The Handle (Hidden -> Visible on Hover) */}
+        <div 
+            className="absolute h-3 w-3 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none"
+            style={{ left: `calc(${volume * 100}% - 6px)` }}
+        />
+    </div>
+</div>
 
-        {/* Playback Buttons */}
-        <div className="flex items-center gap-5">
-          <button className="text-[#b3b3b3] hover:text-white transition" onClick={handlePrevious} aria-label="Previous track">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z"/></svg>
-          </button>
-          
-          <button 
-            className="w-8 h-8 flex items-center justify-center bg-white rounded-full text-black hover:scale-105 transition active:scale-95" 
-            onClick={handleTogglePlay} 
-            aria-label={isPaused ? "Play" : "Pause"}
-          >
-            {isPaused ? (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5"><path d="M8 5v14l11-7z"/></svg>
-            ) : (
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-            )}
-          </button>
-          
-          <button className="text-[#b3b3b3] hover:text-white transition" onClick={handleNext} aria-label="Next track">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.107A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z"/></svg>
-          </button>
+             <div className="flex items-center gap-3">
+               <button 
+  onClick={handleToggleShuffle} 
+  className={`transition ${shuffleState ? 'text-[#1db954] hover:text-[#1ed760]' : 'text-[#b3b3b3] hover:text-white'}`}
+  aria-label="Toggle Shuffle"
+>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+    </svg>
+</button>
+
+               <button className="text-[#b3b3b3] hover:text-white transition" onClick={handlePrevious}>
+                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z"/></svg>
+               </button>
+               
+               <button className="w-8 h-8 flex items-center justify-center bg-white rounded-full text-black hover:scale-105 transition active:scale-95" onClick={handleTogglePlay}>
+                 {isPaused ? (
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="ml-0.5"><path d="M8 5v14l11-7z"/></svg>
+                 ) : (
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                 )}
+               </button>
+               
+               <button className="text-[#b3b3b3] hover:text-white transition" onClick={handleNext}>
+                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M12.7 1a.7.7 0 0 0-.7.7v5.15L2.05 1.107A.7.7 0 0 0 1 1.712v12.575a.7.7 0 0 0 1.05.607L12 9.149V14.3a.7.7 0 0 0 .7.7h1.6a.7.7 0 0 0 .7-.7V1.7a.7.7 0 0 0-.7-.7h-1.6z"/></svg>
+               </button>
+
+                <button onClick={handleToggleRepeat} className={`text-[#b3b3b3] hover:text-white transition relative`}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className={repeatState > 0 ? "text-[#1DB954]" : ""}><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+                    {repeatState === 2 && <div className="absolute -top-1 -right-1 bg-[#1DB954] text-black text-[8px] font-bold rounded-full w-3 h-3 flex items-center justify-center">1</div>}
+               </button>
+             </div>
+           </div>
         </div>
-      </div>
+      )}
+
     </div>
   )
 }

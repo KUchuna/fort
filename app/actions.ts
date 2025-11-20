@@ -28,13 +28,20 @@ export async function addObsession(formData: FormData) {
 }
 
 
+const SPOTIFY_API = 'https://api.spotify.com/v1';
+
 export async function getAccessToken() {
   const refresh_token = process.env.SPOTIFY_REFRESH_TOKEN;
   const client_id = process.env.SPOTIFY_CLIENT_ID;
   const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
 
+  if (!refresh_token || !client_id || !client_secret) {
+    throw new Error("Missing Spotify environment variables");
+  }
+
   const basic = Buffer.from(`${client_id}:${client_secret}`).toString('base64');
 
+  // FIX 2: Use the official Spotify Token URL
   const response = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
     headers: {
@@ -43,20 +50,52 @@ export async function getAccessToken() {
     },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: refresh_token!,
+      refresh_token: refresh_token,
     }),
     cache: 'no-store',
   });
 
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Spotify Token Error:", response.status, errorText);
+    throw new Error(`Failed to get token: ${response.statusText}`);
+  }
+
   const data = await response.json();
   return data.access_token;
 }
+// --- New Features Functions ---
 
+export async function searchSpotify(query: string) {
+  const token = await getAccessToken();
+  const res = await fetch(`${SPOTIFY_API}/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.json();
+}
+
+export async function getUserPlaylists() {
+  const token = await getAccessToken();
+  const res = await fetch(`${SPOTIFY_API}/me/playlists?limit=20`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.json();
+}
+
+export async function getPlaylistDetails(href: string) {
+  const token = await getAccessToken();
+  const res = await fetch(href, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.json();
+}
+
+// --- Playback Control Functions ---
 
 export async function transferPlayback(deviceId: string) {
   const token = await getAccessToken();
   
-  const res = await fetch('https://api.spotify.com/v1/me/player', {
+  const res = await fetch(`${SPOTIFY_API}/me/player`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -68,9 +107,69 @@ export async function transferPlayback(deviceId: string) {
     }),
   });
 
-  // CRITICAL ADDITION: Throw error if Spotify says "No"
   if (!res.ok) {
-    const errorBody = await res.text(); // Get error details
-    throw new Error(`Spotify Transfer Failed: ${res.status} ${res.statusText} - ${errorBody}`);
+    const errorBody = await res.text();
+    throw new Error(`Spotify Transfer Failed: ${res.status} - ${errorBody}`);
   }
+}
+
+export async function startPlayback(deviceId: string, contextUri?: string, trackUri?: string, positionMs: number = 0) {
+  const token = await getAccessToken();
+  
+  const body: any = {
+    position_ms: positionMs
+  };
+
+  if (contextUri) {
+    body.context_uri = contextUri;
+    // Only add offset if we are selecting a specific track in a playlist
+    if (trackUri) {
+      body.offset = { uri: trackUri };
+    }
+  } else if (trackUri) {
+    body.uris = [trackUri];
+  }
+
+  const res = await fetch(`${SPOTIFY_API}/me/player/play?device_id=${deviceId}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  // FIX 3: THROW the error so the Client Component can catch it
+  if (!res.ok) {
+     const txt = await res.text();
+     console.error("Start Playback Error:", txt);
+     throw new Error(txt || "Failed to start playback");
+  }
+}
+
+export async function toggleShuffle(deviceId: string, state: boolean) {
+  const token = await getAccessToken();
+  // Explicitly convert boolean to string 'true'/'false'
+  const stateStr = state ? 'true' : 'false';
+  
+  const res = await fetch(`${SPOTIFY_API}/me/player/shuffle?state=${stateStr}&device_id=${deviceId}`, {
+    method: 'PUT',
+    headers: { 
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json' // standard header for good measure
+    }
+  });
+
+  if (!res.ok) {
+      // Log error but don't crash app, just let it fail silently or return false
+      console.error("Shuffle Toggle Failed:", await res.text());
+  }
+}
+
+export async function setRepeatMode(deviceId: string, state: 'track' | 'context' | 'off') {
+  const token = await getAccessToken();
+  await fetch(`${SPOTIFY_API}/me/player/repeat?state=${state}&device_id=${deviceId}`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}` }
+  });
 }
