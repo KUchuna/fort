@@ -39,7 +39,7 @@ export default function CurrentObsession() {
 
 
     return (
-        <section>
+        <section className="w-[50%]">
             <h1 className="text-3xl my-6">Obsession</h1>
             <h2 className="text-xl">Update your current obsession (this will be shown on home page):</h2>
             <form className="py-4 w-full flex flex-col gap-4" action={handleSubmit}>
