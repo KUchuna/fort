@@ -10,9 +10,9 @@ import {
   getUserPlaylists, 
   searchSpotify, 
   playContent,
-  getPlaylistTracks, // NEW
-  toggleShuffle,     // NEW
-  setRepeatMode as setSpotifyRepeat      // NEW
+  getPlaylistTracks, 
+  toggleShuffle, 
+  setRepeatMode as setSpotifyRepeat
 } from '@/app/actions'
 
 // --- Types ---
@@ -260,7 +260,7 @@ export default function SpotifyPlayer() {
          <h3 className="text-white font-bold mb-2 text-lg">Personal Spotify</h3>
          <p className="text-neutral-400 text-sm mb-6">Control music directly from here.</p>
          {error && <p className="text-red-400 text-xs mb-4">{error}</p>}
-         <button onClick={handleTransfer} disabled={isLoading || !deviceId} className="w-full py-3 bg-pink-600 text-white rounded-xl font-medium transition hover:bg-pink-500 hover:scale-[1.02] active:scale-95 disabled:opacity-50">
+         <button onClick={handleTransfer} className="w-full py-3 bg-pink-600 text-white rounded-xl font-medium transition hover:bg-pink-500 hover:scale-[1.02] active:scale-95 disabled:opacity-50">
            {isLoading ? 'Connecting...' : 'Start Listening'}
          </button>
       </div>
