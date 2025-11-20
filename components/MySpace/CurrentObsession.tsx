@@ -15,27 +15,28 @@ export default function CurrentObsession() {
     const [description, setDescription] = useState("")
 
 
-    async function handleSubmit(formData: FormData) {
-        setError("");
-        
-        const description = formData.get("description") as string;
-        
-        const result = DescriptionSchema.safeParse({ description });
-        
-        if (!result.success) {
-            setError(result.error.issues[0].message);
-            return;
+        async function handleSubmit(formData: FormData) {
+            setError("");
+
+            const description = formData.get("description") as string;
+            
+            const result = DescriptionSchema.safeParse({ description });
+            
+            if (!result.success) {
+                setError(result.error.issues[0].message);
+                return;
+            }
+
+            try {
+                await addObsession(formData);
+                setShowSuccess(true);
+                setTimeout(() => setShowSuccess(false), 3000);
+                setDescription("");
+            } catch (err) {
+                setError("Failed to update obsession");
+            }
         }
-        
-        try {
-            await addObsession(formData);
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
-            setDescription("")
-        } catch (err) {
-            setError("Failed to update obsession");
-        }
-    }
+
 
     return (
         <section>
