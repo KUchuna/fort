@@ -28,7 +28,7 @@ export default function MySpaceAuthModal() {
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-2xl p-8 flex flex-col gap-4 w-[300px]"
+        className="bg-background rounded-[20px] p-8 flex flex-col gap-4 w-[300px]"
       >
         <h2 className="text-xl font-semibold text-center">Enter Password</h2>
 
@@ -36,7 +36,7 @@ export default function MySpaceAuthModal() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="border rounded-lg p-2"
+          className="border bg-white focus:outline-none border-accent rounded-lg p-2"
           placeholder="Password"
         />
 
@@ -46,9 +46,9 @@ export default function MySpaceAuthModal() {
 
         <button
           type="submit"
-          className="bg-pink-400 text-white rounded-lg p-2 hover:bg-pink-500 transition"
+          className="bg-accent text-white font-bold uppercase rounded-lg p-2"
         >
-          Enter
+          submit
         </button>
       </form>
     </div>

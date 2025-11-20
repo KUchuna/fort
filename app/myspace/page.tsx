@@ -1,8 +1,12 @@
+import CurrentObsession from "@/components/MySpace/CurrentObsession";
+
 export default function MySpace() {
   return (
-    <main className="min-h-screen p-10">
-      <h1 className="text-4xl font-semibold mb-4">Welcome to My Space ✨</h1>
-      <p>This is my personal page.</p>
+    <main className="pt-6">
+      <h1 className="text-4xl font-semibold">Welcome, Tamar ✨</h1>
+      <p className="italic  mb-4">This is your private space, which only you can access.</p>
+      <hr></hr>
+      <CurrentObsession />
     </main>
   );
 }
