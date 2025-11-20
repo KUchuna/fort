@@ -7,7 +7,11 @@ import {motion} from "motion/react";
 import HeroImage from "./HeroImage";
 import obsessions from "@/public/icons/obsessions.png"
 
-export default function HomeLeft() {
+interface HomeLeftProps {
+    obsession: any
+}
+
+export default function HomeLeft({obsession}: HomeLeftProps) {
     return (
         <section className="flex flex-col gap-6 w-[70%]">
             <div className="flex gap-6 w-full h-[60%]">
@@ -57,7 +61,7 @@ export default function HomeLeft() {
                         <p className="font-medium">What has captured my imagination lately</p>
                     </div>
                     <div>
-                        <p>There’s nothing quite like the crackle of a needle hitting the groove. My latest obsession is hunting down records from my favorite artists, creating a physical library of music that mixes eras and styles perfectly.</p>
+                        <p>{obsession?.description}</p>
                     </div>
                 </motion.div>
             </div>

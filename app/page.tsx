@@ -1,6 +1,6 @@
 import HomeContents from "@/components/Home/HomeContents";
 
-export default function Home() {
+export default async function Home() {
   return (
     <main className="h-full">
       <HomeContents />
