@@ -74,3 +74,4 @@ export async function transferPlayback(deviceId: string) {
     throw new Error(`Spotify Transfer Failed: ${res.status} ${res.statusText} - ${errorBody}`);
   }
 }
+
