@@ -20,3 +20,27 @@
   border-radius: 1.25rem;
   background-color: var(--color-main);
 }
+
+.custom-scrollbar {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #ec4899 transparent; /* Pink thumb, Transparent track */
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px; /* Thin width */
+  height: 4px; /* Thin height for horizontal scroll */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* Invisible track */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #ec4899; /* Pink color */
+  border-radius: 9999px; /* Fully rounded */
+}
+
+.custom-scrollbar::-webkit-scrollbar-button {
+  display: none; /* Remove buttons */
+}

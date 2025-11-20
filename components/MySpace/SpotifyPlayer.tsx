@@ -12,7 +12,7 @@ import {
   playContent,
   getPlaylistTracks, // NEW
   toggleShuffle,     // NEW
-  setRepeatMode      // NEW
+  setRepeatMode as setSpotifyRepeat      // NEW
 } from '@/app/actions'
 
 // --- Types ---
@@ -137,17 +137,15 @@ export default function SpotifyPlayer() {
   }, [volume])
 
   const updateState = (state: PlayerState | null) => {
-    if (!state) return
-    setCurrentTrack(state.track_window.current_track)
-    setIsPaused(state.paused)
-    setDuration(state.duration)
-    setPosition(state.position)
-    
-    // Sync Shuffle/Repeat
-    setShuffleState(state.shuffle)
-    setRepeatMode(state.repeat_mode)
-    
-    setIsActive(true)
+      if (!state) return
+      setCurrentTrack(state.track_window.current_track)
+      setIsPaused(state.paused)
+      setDuration(state.duration)
+      setPosition(state.position)
+      
+      setShuffleState(state.shuffle)
+      setRepeatMode(state.repeat_mode as 0 | 1 | 2)
+      setIsActive(true)
   }
 
   useEffect(() => {
@@ -190,12 +188,13 @@ export default function SpotifyPlayer() {
 
   const handleToggleRepeat = async () => {
     if(!deviceId) return
-    // Cycle: 0 (off) -> 1 (context) -> 2 (track) -> 0
+    
     const nextMode = repeatMode === 0 ? 1 : repeatMode === 1 ? 2 : 0
     const modeString = nextMode === 0 ? 'off' : nextMode === 1 ? 'context' : 'track'
     
     setRepeatMode(nextMode)
-    await setRepeatMode(deviceId, modeString)
+    
+    await setSpotifyRepeat(deviceId, modeString)
   }
 
   const openPlaylist = async (playlist: SpotifyPlaylist) => {
@@ -256,10 +255,10 @@ export default function SpotifyPlayer() {
 
   if (!isActive) {
     return (
-      <div className="w-full max-w-md mx-auto mt-6 p-6 bg-black/90 backdrop-blur-xl rounded-[24px] border border-neutral-800 text-center shadow-2xl">
+      <div className="w-full max-w-md mt-6 p-6 bg-black/90 backdrop-blur-xl rounded-[20px] border border-neutral-800 text-center shadow-2xl">
          <div className="mb-4 text-5xl animate-pulse">🎧</div>
-         <h3 className="text-white font-bold mb-2 text-lg">Spotify Personal Player</h3>
-         <p className="text-neutral-400 text-sm mb-6">Control music directly from this website.</p>
+         <h3 className="text-white font-bold mb-2 text-lg">Personal Spotify</h3>
+         <p className="text-neutral-400 text-sm mb-6">Control music directly from here.</p>
          {error && <p className="text-red-400 text-xs mb-4">{error}</p>}
          <button onClick={handleTransfer} disabled={isLoading || !deviceId} className="w-full py-3 bg-pink-600 text-white rounded-xl font-medium transition hover:bg-pink-500 hover:scale-[1.02] active:scale-95 disabled:opacity-50">
            {isLoading ? 'Connecting...' : 'Start Listening'}
@@ -269,8 +268,7 @@ export default function SpotifyPlayer() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto h-[480px] mt-6 bg-black shadow-2xl rounded-[30px] overflow-hidden relative flex flex-col border border-neutral-800">
-      
+    <div className="w-full h-[400px] max-w-md mt-6 bg-black shadow-2xl rounded-[20px] overflow-hidden relative flex flex-col">
       <div className="flex-1 overflow-hidden relative p-6">
         <AnimatePresence mode="wait">
           
@@ -380,7 +378,6 @@ export default function SpotifyPlayer() {
                 {playlists.map(pl => (
                   <button 
                     key={pl.id}
-                    // CHANGED: Now opens the playlist view instead of playing immediately
                     onClick={() => openPlaylist(pl)}
                     className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-900 group text-left"
                   >
