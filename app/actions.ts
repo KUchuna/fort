@@ -1,6 +1,6 @@
 "use server"
 import { neon } from '@neondatabase/serverless';
-import { revalidatePath } from 'next/cache';
+import { revalidatePath, updateTag } from 'next/cache';
 import { cookies } from 'next/headers';
 
 export async function addObsession(formData: FormData) {
@@ -23,5 +23,5 @@ export async function addObsession(formData: FormData) {
         VALUES (${description})
     `;
 
-    revalidatePath("/")
+    updateTag("obsession")
 }
