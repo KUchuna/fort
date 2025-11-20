@@ -2,6 +2,7 @@
 
 import './embla.css'
 import EmblaCarousel from './EmblaCarousel'
+import { EmblaOptionsType } from 'embla-carousel'
 
 const SLIDES = [
     {
@@ -13,7 +14,7 @@ const SLIDES = [
     {
         id: 2,
         image: '/images/interests/travel.jpg',
-        title: "Travel",
+        title: "Travelling",
         description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Placeat explicabo, quisquam commodi nemo doloremque ullam? Eius nostrum placeat maiores"
     },
     {
@@ -36,8 +37,10 @@ const SLIDES = [
     },
 ]
 
+const OPTIONS: EmblaOptionsType = { loop: true }
+
 export default function EmblaContainer() {
     return (
-        <EmblaCarousel slides={SLIDES} />
+        <EmblaCarousel slides={SLIDES} options={OPTIONS}/>
     )
 }

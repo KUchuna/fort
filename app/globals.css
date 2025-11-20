@@ -11,9 +11,6 @@
   font-family: 'Gilroy';
 }
 
-*::selection {
-  background-color: var(--color-accent);
-}
 
 .container {
   padding: 1.5rem;

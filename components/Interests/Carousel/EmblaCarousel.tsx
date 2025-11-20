@@ -7,6 +7,7 @@ import {
   NextButton,
   usePrevNextButtons
 } from './EmblaCarouselArrowButtons'
+import AutoScroll from 'embla-carousel-auto-scroll'
 import useEmblaCarousel from 'embla-carousel-react'
 import TiltCard from '@/components/Globals/TiltCard'
 import { motion, AnimatePresence } from "framer-motion"
@@ -28,7 +29,7 @@ const MotionImage = motion(Image);
 
 const EmblaCarousel: React.FC<PropType> = (props) => {
   const { slides, options } = props
-  const [emblaRef, emblaApi] = useEmblaCarousel(options)
+  const [emblaRef, emblaApi] = useEmblaCarousel(options, [AutoScroll({ playOnInit: true, speed: 3, startDelay: 500, stopOnInteraction: false })])
 
   const [selectedId, setSelectedId] = useState<number | null>(null)
 
@@ -106,7 +107,7 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
             {/* The Expanded Card */}
             <motion.div
               layoutId={`card-container-${selectedId}`}
-              className="relative w-full h-max max-w-[45%] bg-black rounded-2xl overflow-hidden shadow-2xl flex flex-col pointer-events-auto"
+              className="relative w-full h-max max-w-[45%] 2xl:max-w-[30%] bg-black rounded-2xl overflow-hidden shadow-2xl flex flex-col pointer-events-auto"
               transition={{
                 layout: { type: "spring", stiffness: 300, damping: 40 },
               }}
