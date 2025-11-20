@@ -1,5 +1,6 @@
 "use server";
 import { neon } from '@neondatabase/serverless';
+import { revalidatePath } from 'next/cache';
 
 const sql = neon(process.env.DB_DATABASE_URL!);
 
@@ -11,10 +12,12 @@ export async function getObsession() {
       ORDER BY id DESC
       LIMIT 1
     `;
-
+    
     return obsessions[0] ?? { id: 0, description: "" }
   } catch (error) {
     console.error("Error fetching obsession:", error);
     return null;
+  } finally {
+    revalidatePath("/")
   }
 }
