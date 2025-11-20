@@ -52,10 +52,11 @@ export async function getAccessToken() {
   return data.access_token;
 }
 
+
 export async function transferPlayback(deviceId: string) {
   const token = await getAccessToken();
   
-  await fetch('https://api.spotify.com/v1/me/player', {
+  const res = await fetch('https://api.spotify.com/v1/me/player', {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -63,7 +64,13 @@ export async function transferPlayback(deviceId: string) {
     },
     body: JSON.stringify({
       device_ids: [deviceId],
-      play: true, // Auto-play upon transfer
+      play: true,
     }),
   });
+
+  // CRITICAL ADDITION: Throw error if Spotify says "No"
+  if (!res.ok) {
+    const errorBody = await res.text(); // Get error details
+    throw new Error(`Spotify Transfer Failed: ${res.status} ${res.statusText} - ${errorBody}`);
+  }
 }
