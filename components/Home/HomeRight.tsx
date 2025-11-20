@@ -25,7 +25,7 @@ export default function HomeRight() {
                     <Image src={interests} alt=" interests" width={2000} height={2000} priority className="w-full rounded-[20px] transition-all duration-300 group-hover:scale-[1.05]" />
                 </Link>
                 <ul className="flex flex-col gap-6">
-                    {[1,2,3].map((item) => (
+                    {["Music","Travelling","Anime"].map((item) => (
                         <ListItem key={item}> 
                             {item}
                         </ListItem>

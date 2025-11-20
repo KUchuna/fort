@@ -5,6 +5,7 @@ import flower from "@/public/icons/flower.svg";
 import circle from "@/public/icons/circle.svg";
 import {motion} from "motion/react";
 import HeroImage from "./HeroImage";
+import obsessions from "@/public/icons/obsessions.png"
 
 export default function HomeLeft() {
     return (
@@ -18,7 +19,7 @@ export default function HomeLeft() {
                     }}
                     transition={{ type: "spring", stiffness: 200, damping: 15 }}
                 >
-                    <p className="mt-auto mb-20 text-5xl w-[70%]">
+                    <p className="mt-auto mb-20 3xl:text-5xl text-3xl w-[70%]">
                         A <span className="font-semibold">Vibrant</span> Personality Thriving on <span className="font-semibold">Connection, Spontaneity, and Discovery</span>
                     </p>
                     <Image src={flower} alt="" width={200} height={200} className="absolute right-6 top-6 group-hover:rotate-90 transition-all duration-200"/>
@@ -46,14 +47,17 @@ export default function HomeLeft() {
                         scale: 1.02,
                         boxShadow: "0px 8px 20px rgba(255, 182, 193, 0.25)",
                     }}
-                transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                className="rounded-[20px] p-6 bg-accent flex flex-col flex-1 justify-between">
-                    <div className="flex justify-between w-full">
-                        <button>HELLO WORLD</button>
-                        <button>SEE MORE</button>
+                    transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                    className="group rounded-[20px] p-6 bg-accent flex flex-col flex-1 justify-between">
+                    <div className="flex flex-col gap-2">
+                        <div className="flex justify-start w-full gap-6 items-center text-white">
+                            <h2 className="text-3xl font-semibold">Current Obsessions</h2>
+                            <Image src={obsessions} alt="" width={30} height={30} className="group-hover:drop-shadow-[0_-10px_6px_rgba(255,255,255,0.8)] transition-all duration-300"/>
+                        </div>
+                        <p className="font-medium">What has captured my imagination lately</p>
                     </div>
                     <div>
-                        <p className="text-5xl">Contact me</p>
+                        <p>There’s nothing quite like the crackle of a needle hitting the groove. My latest obsession is hunting down records from my favorite artists, creating a physical library of music that mixes eras and styles perfectly.</p>
                     </div>
                 </motion.div>
             </div>
