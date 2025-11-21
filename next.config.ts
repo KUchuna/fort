@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
         hostname: "mosaic.scdn.co",
         port: '',
       },
+      {
+        protocol: 'https',
+        hostname: "bnooctlevxxbyb6o.public.blob.vercel-storage.com",
+        port: '',
+      },
     ],
   },
 };

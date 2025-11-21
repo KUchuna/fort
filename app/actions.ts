@@ -4,6 +4,7 @@ import { neon } from "@neondatabase/serverless";
 import { revalidatePath } from "next/cache";
 import { createSession } from '@/lib/auth';
 import { verifySession } from '@/lib/auth';
+import { put, del } from '@vercel/blob';
 
 const sql = neon(process.env.DB_DATABASE_URL!);
 
@@ -96,15 +97,37 @@ export async function getUserPlaylists() {
   return res.json();
 }
 
-export async function getPlaylistDetails(href: string) {
+export async function getPlaylistDetails(playlistHref: string) {
   const token = await getAccessToken();
-  const res = await fetch(href, {
-    headers: { Authorization: `Bearer ${token}` }
+  
+  const res = await fetch(playlistHref, {
+    headers: { Authorization: `Bearer ${token}` },
   });
-  return res.json();
-}
+  const playlist = await res.json();
 
-// --- Playback Control Functions ---
+  let allTracks = playlist.tracks.items;
+  let nextUrl = playlist.tracks.next;
+
+  while (nextUrl) {
+    const nextRes = await fetch(nextUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const nextData = await nextRes.json();
+
+    allTracks = [...allTracks, ...nextData.items];
+    
+    nextUrl = nextData.next;
+  }
+
+  return {
+    ...playlist,
+    tracks: {
+      ...playlist.tracks,
+      items: allTracks,
+      total: allTracks.length
+    }
+  };
+}
 
 export async function transferPlayback(deviceId: string) {
   const token = await getAccessToken();
@@ -215,7 +238,7 @@ export async function toggleTodo(id: number, isCompleted: boolean) {
   revalidatePath('/');
 }
 
-// --- DELETE ---
+
 export async function deleteTodo(id: number) {
   // FIX: Crash Prevention (same logic as above)
   if (id > 2147483647) return;
@@ -226,4 +249,96 @@ export async function deleteTodo(id: number) {
   `;
   
   revalidatePath('/');
+}
+
+
+export interface GalleryImage {
+  id: number;
+  url: string;
+  title: string | null;
+  created_at: string;
+  pathname: string; 
+  comment_count?: number;
+}
+
+export interface Comment {
+  id: number;
+  image_id: number;
+  user_name: string;
+  content: string;
+  created_at: string;
+}
+
+export async function getImages() {
+  const images = await sql`
+    SELECT 
+      images.*, 
+      COUNT(comments.id) as comment_count 
+    FROM images 
+    LEFT JOIN comments ON images.id = comments.image_id 
+    GROUP BY images.id 
+    ORDER BY images.created_at DESC
+  `;
+  return images as GalleryImage[];
+}
+
+export async function getComments(imageId: number) {
+  const comments = await sql`
+    SELECT * FROM comments 
+    WHERE image_id = ${imageId} 
+    ORDER BY created_at DESC
+  `;
+  return comments as Comment[];
+}
+
+export async function uploadImage(formData: FormData) {
+  const file = formData.get('file') as File;
+  const title = formData.get('title') as string || 'Untitled';
+
+  if (!file) {
+    throw new Error('No file provided');
+  }
+
+  const blob = await put(file.name, file, {
+    access: 'public',
+    addRandomSuffix: true,
+  });
+
+  await sql`
+    INSERT INTO images (url, pathname, title) 
+    VALUES (${blob.url}, ${blob.pathname}, ${title})
+  `;
+
+  revalidatePath('/gallery');
+  return { success: true };
+}
+
+export async function addComment(imageId: number, content: string, userName: string = 'Guest') {
+  if (!content.trim()) return;
+
+  await sql`
+    INSERT INTO comments (image_id, content, user_name) 
+    VALUES (${imageId}, ${content}, ${userName})
+  `;
+
+  revalidatePath('/gallery');
+}
+
+export async function deleteImage(id: number, pathname: string) {
+  try {
+    if (pathname) {
+      await del(pathname);
+    }
+
+    await sql`
+      DELETE FROM images 
+      WHERE id = ${id}
+    `;
+
+    revalidatePath('/gallery');
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete image:", error);
+    throw new Error("Failed to delete image");
+  }
 }

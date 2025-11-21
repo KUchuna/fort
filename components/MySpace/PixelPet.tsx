@@ -147,14 +147,13 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
 
   const [screenPos, setScreenPos] = useState({ x: 0, y: 0 });
 
-  // NEW: Initialize position near bottom-left once mounted
+
   useEffect(() => {
       if(isMounted && window) {
           setScreenPos({ x: 50, y: window.innerHeight - 150 })
       }
   }, [isMounted]);
 
-  // NEW: Wandering Logic Loop
   useEffect(() => {
     if (!isMounted || state === 'sleeping') return;
 
@@ -177,7 +176,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     return () => clearInterval(wanderInterval);
   }, [isMounted, state]);
   
-  // --- 0. MOUNT & INITIAL SYNC ---
+
   useEffect(() => {
     setIsMounted(true);
     if (isMusicPlaying) {
@@ -185,7 +184,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     }
   }, [isMusicPlaying]);
 
-  // --- 1. VITALS LOGIC ---
+
   useEffect(() => {
     if (!isMounted) return;
     const timer = setInterval(() => {
@@ -202,10 +201,9 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     return () => clearInterval(timer);
   }, [state, hunger, happiness, isMounted, isBubbleVisible]);
 
-  // --- 2. MUSIC SYNC ---
+
   useEffect(() => {
     if (!isMounted) return;
-    // Don't interrupt important states
     if (state === 'sleeping' || state === 'eating') return;
 
     if (isMusicPlaying) {
@@ -224,7 +222,6 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     }
   }, [isMusicPlaying, state, hunger, happiness, isBubbleVisible, isMounted]);
 
-  // --- 3. SPEECH SYSTEM ---
   useEffect(() => {
     if (displayedText.length < fullText.length) {
       setIsTyping(true);
@@ -250,7 +247,6 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     setIsBubbleVisible(true);
   }, []);
 
-  // --- 4. HANDLE ANSWER ---
   const handleAnswer = (option: DialogueOption) => {
       speak(option.reply, null); 
       
@@ -267,7 +263,6 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
       }
   };
 
-  // --- 5. FEEDING & SNACKS ---
   const spawnSnack = (snackData: { icon: string, value: number }) => {
     setSnacks(prev => [...prev, { ...snackData, id: Date.now(), x: window.innerWidth/2, y: window.innerHeight/2 }]);
   };
@@ -290,9 +285,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     }
   };
 
-  // --- 6. INTERACTIONS (CLICK & PETTING) ---
   
-  // Toggle Sleep/Wake (Click)
   const handleInteract = () => {
     if (state === 'eating') return;
     
@@ -310,19 +303,17 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     }
   };
 
-  // Petting Logic (Mouse Move)
   const handleMouseMoveOverPet = () => {
     if (state === 'sleeping') return;
     
     const now = Date.now();
     if (now - lastRubTimeRef.current > 200) {
-      rubCounterRef.current = 0; // Reset if stopped moving
+      rubCounterRef.current = 0;
     }
     
     rubCounterRef.current += 1;
     lastRubTimeRef.current = now;
 
-    // If rubbed enough times
     if (rubCounterRef.current > 30) {
       rubCounterRef.current = 0; 
       spawnHearts(2);
@@ -349,10 +340,8 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     setHearts(prev => [...prev, ...newHearts]);
     setTimeout(() => setHearts(prev => prev.slice(count)), 1000);
   };
-
-  // --- 7. BACKGROUND LOOPS (Chatter & Sleep Particles) ---
   
-  // Random Chatter
+
   useEffect(() => {
     if (!isMounted) return;
     const interval = setInterval(() => {
@@ -370,7 +359,6 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     return () => clearInterval(interval);
   }, [isBubbleVisible, state, speak, isMounted]);
 
-  // Sleep Particles
   useEffect(() => {
     if (state !== 'sleeping') {
         setSleepParticles([]);
@@ -388,13 +376,12 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
   }, [state]);
 
 
-  // --- CONFIG ---
   const spriteConfig = {
     idle: { row: 0, steps: 3, speed: 0.8 },
     dancing: { row: 1, steps: 3, speed: 0.5 },
     sleeping: { row: 2, steps: 3, speed: 1.5 },
     eating: { row: 1, steps: 3, speed: 0.2 },
-    sad: { row: 0, steps: 1, speed: 1 }, // Shows just the first frame of idle (assumed sad-ish)
+    sad: { row: 0, steps: 1, speed: 1 },
   };
   const currentAnim = spriteConfig[state];
   const yPosition = `${currentAnim.row * 50}%`;
@@ -447,7 +434,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
          </AnimatePresence>
       </div>
 
-      <div ref={constraintsRef} className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      <div ref={constraintsRef} className="fixed top-0 bottom-0 left-0 right-0 w-full h-full inset-0 pointer-events-none z-50 overflow-hidden">
         {/* SNACKS IN WORLD */}
         <AnimatePresence>
             {snacks.map(snack => (
@@ -461,18 +448,13 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
           drag
           dragConstraints={constraintsRef}
           dragMomentum={false}
-          // Mark dragging state start
           onDragStart={() => { isDraggingRef.current = true; }}
-          // Update state on drop so it resumes floating from here
           onDragEnd={(e, info) => {
              setTimeout(() => { isDraggingRef.current = false; }, 150);
-             // info.point is absolute coordinates. Subtract offset to center anchor roughly.
              setScreenPos({ x: info.point.x - 50, y: info.point.y - 50 });
           }}
           onMouseMove={handleMouseMoveOverPet}
-          // Animate to the current state position
           animate={{ x: screenPos.x, y: screenPos.y }}
-          // Floaty transition physics
           transition={{
             type: "spring",
             mass: 3,      // Heavier feel

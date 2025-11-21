@@ -67,7 +67,7 @@ const handleDeleteTodo = async (id: number) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="w-80 sm:w-96 h-[400px] bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl shadow-pink-500/20 rounded-3xl overflow-hidden flex flex-col"
+            className="w-80 sm:w-120 h-[400px] bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl shadow-pink-500/20 rounded-3xl overflow-hidden flex flex-col"
             id="todo"
           >
             {/* Header */}
