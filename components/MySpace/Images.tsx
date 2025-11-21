@@ -271,7 +271,7 @@ function ExpandedView({ image, onClose }: { image: GalleryImage, onClose: () => 
         onClick={(e) => e.stopPropagation()}
       >
         {/* LEFT: IMAGE */}
-        <div className="relative w-full md:w-[60%] h-[40%] md:h-full bg-black group">
+        <div className="relative w-full md:w-[60%] h-[40%] md:h-full bg-black group shrink-0">
           <Image 
             src={image.url} 
             alt={image.title || "Detail"} 
@@ -318,9 +318,10 @@ function ExpandedView({ image, onClose }: { image: GalleryImage, onClose: () => 
         </div>
 
         {/* RIGHT: COMMENTS */}
-        <div className="flex-1 flex flex-col bg-rose-50/50 h-full">
+        {/* FIXED: Added min-w-0 to prevent flexbox overflow */}
+        <div className="flex-1 flex flex-col bg-rose-50/50 h-full min-w-0">
           {/* Header */}
-          <div className="p-6 border-b border-rose-100 bg-white flex justify-between items-center">
+          <div className="p-6 border-b border-rose-100 bg-white flex justify-between items-center shrink-0">
             <h3 className="font-bold text-rose-900 flex items-center gap-2">
               Comments <span className="bg-rose-100 text-rose-600 text-xs px-2 py-0.5 rounded-full">{comments.length}</span>
             </h3>
@@ -330,7 +331,7 @@ function ExpandedView({ image, onClose }: { image: GalleryImage, onClose: () => 
           </div>
 
           {/* List */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar" id="todo">
             {isLoadingComments ? (
               <div className="flex justify-center pt-10"><Loader2 className="animate-spin text-pink-400" /></div>
             ) : comments.length === 0 ? (
@@ -346,7 +347,9 @@ function ExpandedView({ image, onClose }: { image: GalleryImage, onClose: () => 
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-300 to-rose-400 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                     {comment.user_name.charAt(0).toUpperCase()}
                   </div>
-                  <div className="flex-1">
+                  
+                  {/* FIXED: Wrapper with min-w-0 ensures text wraps properly */}
+                  <div className="flex-1 min-w-0">
                     <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm text-sm border border-rose-100 group-hover:border-rose-200 transition-colors">
                       <div className="flex justify-between items-start mb-1">
                         <span className="font-bold text-rose-900 text-xs">{comment.user_name}</span>
@@ -357,7 +360,8 @@ function ExpandedView({ image, onClose }: { image: GalleryImage, onClose: () => 
                           <X className="w-3 h-3" />
                         </button>
                       </div>
-                      <p className="text-slate-700">{comment.content}</p>
+                      {/* FIXED: break-words allows long text to wrap */}
+                      <p className="text-slate-700 break-words whitespace-pre-wrap">{comment.content}</p>
                     </div>
                     <span className="text-[10px] text-rose-300 pl-2">
                       {new Date(comment.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -369,18 +373,17 @@ function ExpandedView({ image, onClose }: { image: GalleryImage, onClose: () => 
           </div>
 
           {/* Input Area */}
-          <div className="p-4 bg-white border-t border-rose-100">
-            {/* Username Setter */}
+          <div className="p-4 bg-white border-t border-rose-100 shrink-0">
             <div className="flex items-center gap-2 mb-3 px-1">
                <User className="w-3 h-3 text-rose-400" />
                {isUsernameEditing ? (
                  <input 
-                    autoFocus
-                    type="text" 
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    onBlur={() => setIsUsernameEditing(false)}
-                    className="text-xs border-b border-rose-300 outline-none text-rose-600 bg-transparent"
+                   autoFocus
+                   type="text" 
+                   value={username}
+                   onChange={(e) => setUsername(e.target.value)}
+                   onBlur={() => setIsUsernameEditing(false)}
+                   className="text-xs border-b border-rose-300 outline-none text-rose-600 bg-transparent"
                  />
                ) : (
                  <span 
