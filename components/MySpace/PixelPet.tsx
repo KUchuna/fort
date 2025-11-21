@@ -5,6 +5,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 // --- TYPES ---
 type PetState = 'idle' | 'sleeping' | 'dancing' | 'eating' | 'sad';
 type Heart = { id: number; x: number; y: number };
+type Particle = { id: number; x: number; y: number };
 type Snack = { id: number; icon: string; x: number; y: number; value: number };
 
 // Dialogue Types
@@ -21,7 +22,7 @@ type Question = {
   options: DialogueOption[];
 };
 
-// --- DATA ---
+// --- DATA: Expanded Speech Variety ---
 const SNACKS = [
     { icon: "🍒", value: 10 }, 
     { icon: "🍰", value: 20 }, 
@@ -45,7 +46,11 @@ const IDLE_PHRASES = [
   "Tamar! Look at me! 👀",
   "Your website is so cool...",
   "Zzz... oh, hi Tamar!",
-  "Can I have a treat? 🍪"
+  "Can I have a treat? 🍪",
+  "Is that a bug? Oh wait, it's a feature.",
+  "I like your style! 👗",
+  "Pixels are the best. 👾",
+  "Do you need a break?",
 ];
 
 const QUESTIONS: Question[] = [
@@ -93,6 +98,19 @@ const QUESTIONS: Question[] = [
   }
 ];
 
+// --- SUB-COMPONENT: Zzz Particle ---
+const ZzzParticle = ({ x, y }: { x: number, y: number }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 0, x: 0, scale: 0.5 }}
+      animate={{ opacity: [0, 1, 0], y: -30, x: Math.random() * 20 - 10, scale: 1.2 }}
+      transition={{ duration: 2, ease: "easeOut" }}
+      className="absolute text-blue-400 font-bold text-xs pointer-events-none z-[60]"
+      style={{ left: x, top: y }}
+    >
+      Zzz...
+    </motion.div>
+  );
+
 export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }) {
   // --- STATE ---
   const [state, setState] = useState<PetState>('idle');
@@ -111,23 +129,25 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
   // PHYSICS & UTILS
   const [isFacingRight, setIsFacingRight] = useState(true);
   const [hearts, setHearts] = useState<Heart[]>([]);
+  const [sleepParticles, setSleepParticles] = useState<Particle[]>([]);
   const [snacks, setSnacks] = useState<Snack[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
-  // Mounted Check (Fixes hydration/animation start issues)
+  // Mounted Check
   const [isMounted, setIsMounted] = useState(false);
 
   const constraintsRef = useRef(null);
   const petRef = useRef<HTMLDivElement>(null);
   
-  // --- DRAG STATE REF ---
+  // --- REFS ---
   const isDraggingRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const rubCounterRef = useRef(0);
+  const lastRubTimeRef = useRef(0);
 
   // --- 0. MOUNT & INITIAL SYNC ---
   useEffect(() => {
     setIsMounted(true);
-    // If music is playing immediately on load, force dancing state
     if (isMusicPlaying) {
         setState('dancing');
     }
@@ -143,16 +163,17 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
         setHappiness(prev => Math.max(prev - 1, 0)); 
 
         // Complain if needs are critical
-        if (hunger > 80 && Math.random() > 0.8) speak("I'm so hungry... 🍩");
-        if (happiness < 20 && Math.random() > 0.8) speak("Pay attention to me! 🥺");
+        if (hunger > 80 && Math.random() > 0.8 && !isBubbleVisible) speak("I'm so hungry... 🍩");
+        if (happiness < 20 && Math.random() > 0.8 && !isBubbleVisible) speak("Pay attention to me! 🥺");
 
     }, 5000); 
     return () => clearInterval(timer);
-  }, [state, hunger, happiness, isMounted]);
+  }, [state, hunger, happiness, isMounted, isBubbleVisible]);
 
   // --- 2. MUSIC SYNC ---
   useEffect(() => {
     if (!isMounted) return;
+    // Don't interrupt important states
     if (state === 'sleeping' || state === 'eating') return;
 
     if (isMusicPlaying) {
@@ -207,6 +228,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
       if (option.reaction) {
           setState(option.reaction);
           setTimeout(() => {
+            // Return to previous state logic
             if (isMusicPlaying && option.reaction !== 'dancing') setState('dancing');
             else if (!isMusicPlaying && option.reaction !== 'idle') setState('idle');
           }, 2000);
@@ -236,17 +258,44 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     }
   };
 
-  // --- 6. MOUSE & INTERACTION ---
+  // --- 6. INTERACTIONS (CLICK & PETTING) ---
+  
+  // Toggle Sleep/Wake (Click)
   const handleInteract = () => {
+    if (state === 'eating') return;
+    
     spawnHearts(5); 
     setHappiness(prev => Math.min(prev + 5, 100));
 
     if (state === 'sleeping') {
+      // Wake up -> Check Music
       setState(isMusicPlaying ? 'dancing' : 'idle');
       speak("Good morning! ☀️");
     } else {
+      // Go to sleep
       setState('sleeping');
       speak("Goodnight... 💤");
+    }
+  };
+
+  // Petting Logic (Mouse Move)
+  const handleMouseMoveOverPet = () => {
+    if (state === 'sleeping') return;
+    
+    const now = Date.now();
+    if (now - lastRubTimeRef.current > 200) {
+      rubCounterRef.current = 0; // Reset if stopped moving
+    }
+    
+    rubCounterRef.current += 1;
+    lastRubTimeRef.current = now;
+
+    // If rubbed enough times
+    if (rubCounterRef.current > 30) {
+      rubCounterRef.current = 0; 
+      spawnHearts(2);
+      setHappiness(prev => Math.min(prev + 1, 100));
+      if (!isBubbleVisible && Math.random() > 0.85) speak("That feels nice! ~");
     }
   };
 
@@ -269,22 +318,42 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     setTimeout(() => setHearts(prev => prev.slice(count)), 1000);
   };
 
-  // Random chatter loop
+  // --- 7. BACKGROUND LOOPS (Chatter & Sleep Particles) ---
+  
+  // Random Chatter
   useEffect(() => {
     if (!isMounted) return;
     const interval = setInterval(() => {
         if (isBubbleVisible || state === 'sleeping') return;
+        
         const roll = Math.random();
-        if (roll > 0.85) { 
+        if (roll > 0.8) { // Increased frequency slightly
              const randomQ = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
              speak(randomQ.text, randomQ);
-        } else if (roll > 0.6) {
+        } else if (roll > 0.5) {
              const randomPhrase = IDLE_PHRASES[Math.floor(Math.random() * IDLE_PHRASES.length)];
              speak(randomPhrase);
         }
-    }, 2000);
+    }, 3000); // Every 8 seconds check
     return () => clearInterval(interval);
   }, [isBubbleVisible, state, speak, isMounted]);
+
+  // Sleep Particles
+  useEffect(() => {
+    if (state !== 'sleeping') {
+        setSleepParticles([]);
+        return;
+    }
+    const interval = setInterval(() => {
+      const newPart = { id: Date.now(), x: 40 + Math.random() * 20, y: 10 };
+      setSleepParticles(prev => [...prev, newPart]);
+      setTimeout(() => {
+        setSleepParticles(prev => prev.filter(p => p.id !== newPart.id));
+      }, 2000);
+    }, 800);
+
+    return () => clearInterval(interval);
+  }, [state]);
 
 
   // --- CONFIG ---
@@ -293,13 +362,12 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     dancing: { row: 1, steps: 3, speed: 0.5 },
     sleeping: { row: 2, steps: 3, speed: 1.5 },
     eating: { row: 1, steps: 3, speed: 0.2 },
-    // FIXED: Speed cannot be 0 for CSS animation to init correctly in some browsers
-    sad: { row: 0, steps: 1, speed: 1 }, 
+    sad: { row: 0, steps: 1, speed: 1 }, // Shows just the first frame of idle (assumed sad-ish)
   };
   const currentAnim = spriteConfig[state];
   const yPosition = `${currentAnim.row * 50}%`;
 
-  if (!isMounted) return null; // Prevent hydration mismatch
+  if (!isMounted) return null; 
 
   return (
     <>
@@ -355,7 +423,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
             ))}
         </AnimatePresence>
 
-        {/* PET */}
+        {/* PET CONTAINER */}
         <motion.div
           ref={petRef}
           drag 
@@ -363,10 +431,19 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
           dragMomentum={false}
           onDragStart={() => { isDraggingRef.current = true; }}
           onDragEnd={() => { setTimeout(() => { isDraggingRef.current = false; }, 150); }}
+          onMouseMove={handleMouseMoveOverPet}
           whileHover={{ scale: 1.05 }} 
           whileTap={{ scale: 0.95 }}
           className="absolute bottom-4 left-10 w-24 h-24 pointer-events-auto cursor-grab active:cursor-grabbing"
         >
+          {/* Sleep Particles */}
+          <AnimatePresence>
+            {sleepParticles.map(p => (
+                <ZzzParticle key={p.id} x={p.x} y={p.y} />
+            ))}
+          </AnimatePresence>
+
+          {/* Hearts Overlay */}
           <div className="absolute inset-0 pointer-events-none flex justify-center items-center z-40">
             <AnimatePresence>
                 {hearts.map(h => (
@@ -375,6 +452,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
             </AnimatePresence>
           </div>
 
+          {/* Speech Bubble */}
           <AnimatePresence>
             {isBubbleVisible && (
                 <motion.div 
@@ -402,7 +480,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
             )}
           </AnimatePresence>
 
-          {/* Sprite */}
+          {/* Sprite Animation */}
           <motion.div 
             animate={state === 'dancing' ? { y: [0, -8, 0] } : { y: 0 }} 
             transition={state === 'dancing' ? { repeat: Infinity, duration: 0.4 } : {}} 
