@@ -31,14 +31,26 @@ const SNACKS = [
 ];
 
 const IDLE_PHRASES = [
-  "Just chilling... 🌸", "So quiet today.", "Is it coffee time?", 
-  "La la la...", "Waiting for a banger!", "Hello Tamar! ✨", 
-  "Nice cursor! 🖱️"
+  "Just chilling... 🌸", 
+  "So quiet today.", 
+  "Is it coffee time, Tamar? ☕", 
+  "La la la...", 
+  "Waiting for a banger!", 
+  "Hello Tamar! ✨", 
+  "Nice cursor! 🖱️",
+  "Tamar, you're doing great! 💖",
+  "What are we building today?",
+  "I love this song! 🎶",
+  "Don't forget to drink water! 💧",
+  "Tamar! Look at me! 👀",
+  "Your website is so cool...",
+  "Zzz... oh, hi Tamar!",
+  "Can I have a treat? 🍪"
 ];
 
 const QUESTIONS: Question[] = [
   {
-    text: "How are you feeling?",
+    text: "How are you feeling, Tamar?",
     options: [
       { label: "Great! ✨", reply: "Yay! I'm happy too!", reaction: 'dancing', triggerHearts: true, statBoost: true },
       { label: "Tired 😴", reply: "Aww, take a break soon?", reaction: 'sleeping' },
@@ -54,8 +66,29 @@ const QUESTIONS: Question[] = [
   {
     text: "Should we listen to music?",
     options: [
-      { label: "Yes! 🎵", reply: "Drop the beat!!", reaction: 'dancing', triggerHearts: true, statBoost: true },
+      { label: "Yes! 🎵", reply: "Drop the beat, Tamar!!", reaction: 'dancing', triggerHearts: true, statBoost: true },
       { label: "Silence pls", reply: "Shh... quiet mode.", reaction: 'sleeping' },
+    ]
+  },
+  {
+    text: "Working hard today?",
+    options: [
+      { label: "Yes, busy! 💻", reply: "You got this, Tamar! 💪", reaction: 'dancing', statBoost: true },
+      { label: "Nope, relaxing.", reply: "Let's chill then. 🌸", reaction: 'idle' },
+    ]
+  },
+  {
+    text: "Who is your favorite pet?",
+    options: [
+      { label: "You are! 💖", reply: "I knew it! Love you Tamar! 🥰", reaction: 'dancing', triggerHearts: true, statBoost: true },
+      { label: "My computer.", reply: "Rude... 😤", reaction: 'sad' },
+    ]
+  },
+  {
+    text: "Do you like this vibe?",
+    options: [
+      { label: "It's a vibe! ✨", reply: "Vibing with Tamar! ~", reaction: 'dancing', triggerHearts: true },
+      { label: "Not really.", reply: "Aw, maybe next song.", reaction: 'idle' },
     ]
   }
 ];
@@ -65,8 +98,8 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
   const [state, setState] = useState<PetState>('idle');
   
   // VITALS (0 to 100)
-  const [hunger, setHunger] = useState(20); // 0 = Full, 100 = Starving
-  const [happiness, setHappiness] = useState(80); // 0 = Depressed, 100 = Ecstatic
+  const [hunger, setHunger] = useState(20); 
+  const [happiness, setHappiness] = useState(80); 
 
   // SPEECH
   const [displayedText, setDisplayedText] = useState(""); 
@@ -80,6 +113,9 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
   const [hearts, setHearts] = useState<Heart[]>([]);
   const [snacks, setSnacks] = useState<Snack[]>([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
+  // Mounted Check (Fixes hydration/animation start issues)
+  const [isMounted, setIsMounted] = useState(false);
 
   const constraintsRef = useRef(null);
   const petRef = useRef<HTMLDivElement>(null);
@@ -88,33 +124,43 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
   const isDraggingRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // --- 1. VITALS LOGIC (The Game Loop) ---
+  // --- 0. MOUNT & INITIAL SYNC ---
   useEffect(() => {
-    const timer = setInterval(() => {
-        if (state === 'sleeping') return; // Stats don't decay when sleeping
+    setIsMounted(true);
+    // If music is playing immediately on load, force dancing state
+    if (isMusicPlaying) {
+        setState('dancing');
+    }
+  }, [isMusicPlaying]);
 
-        setHunger(prev => Math.min(prev + 1, 100)); // Get hungry (+1 every 5s)
-        setHappiness(prev => Math.max(prev - 1, 0)); // Get bored (-1 every 5s)
+  // --- 1. VITALS LOGIC ---
+  useEffect(() => {
+    if (!isMounted) return;
+    const timer = setInterval(() => {
+        if (state === 'sleeping') return; 
+
+        setHunger(prev => Math.min(prev + 1, 100)); 
+        setHappiness(prev => Math.max(prev - 1, 0)); 
 
         // Complain if needs are critical
         if (hunger > 80 && Math.random() > 0.8) speak("I'm so hungry... 🍩");
         if (happiness < 20 && Math.random() > 0.8) speak("Pay attention to me! 🥺");
 
-    }, 5000); // Run every 5 seconds
+    }, 5000); 
     return () => clearInterval(timer);
-  }, [state, hunger, happiness]);
+  }, [state, hunger, happiness, isMounted]);
 
-  // --- 2. MUSIC SYNC (With Mood Check) ---
+  // --- 2. MUSIC SYNC ---
   useEffect(() => {
+    if (!isMounted) return;
     if (state === 'sleeping' || state === 'eating') return;
 
-    // If starving or depressed, refuse to dance!
     if (isMusicPlaying) {
         if (hunger > 90) {
-            setState('sad');
+            if (state !== 'sad') setState('sad');
             if (!isBubbleVisible) speak("Too hungry to dance...");
         } else if (happiness < 10) {
-            setState('sad');
+            if (state !== 'sad') setState('sad');
             if (!isBubbleVisible) speak("Not in the mood...");
         } else if (state !== 'dancing') {
             setState('dancing'); 
@@ -123,7 +169,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     } else if (!isMusicPlaying && state === 'dancing') {
         setState('idle');
     }
-  }, [isMusicPlaying, state, hunger, happiness, isBubbleVisible]);
+  }, [isMusicPlaying, state, hunger, happiness, isBubbleVisible, isMounted]);
 
   // --- 3. SPEECH SYSTEM ---
   useEffect(() => {
@@ -156,10 +202,9 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
       speak(option.reply, null); 
       
       if (option.triggerHearts) spawnHearts(5);
-      if (option.statBoost) setHappiness(prev => Math.min(prev + 20, 100)); // Boost happiness!
+      if (option.statBoost) setHappiness(prev => Math.min(prev + 20, 100)); 
 
       if (option.reaction) {
-          const oldState = state;
           setState(option.reaction);
           setTimeout(() => {
             if (isMusicPlaying && option.reaction !== 'dancing') setState('dancing');
@@ -183,9 +228,8 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
         spawnHearts(6);
         speak("Yummy! 😋"); 
         
-        // Restore Stats
         setHunger(prev => Math.max(prev - value, 0)); 
-        setHappiness(prev => Math.min(prev + 5, 100)); // Good food makes happy
+        setHappiness(prev => Math.min(prev + 5, 100)); 
 
         setState('eating');
         setTimeout(() => setState(prev => prev === 'eating' ? (isMusicPlaying ? 'dancing' : 'idle') : prev), 1500);
@@ -195,7 +239,6 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
   // --- 6. MOUSE & INTERACTION ---
   const handleInteract = () => {
     spawnHearts(5); 
-    // Interaction boosts happiness slightly
     setHappiness(prev => Math.min(prev + 5, 100));
 
     if (state === 'sleeping') {
@@ -228,6 +271,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
 
   // Random chatter loop
   useEffect(() => {
+    if (!isMounted) return;
     const interval = setInterval(() => {
         if (isBubbleVisible || state === 'sleeping') return;
         const roll = Math.random();
@@ -238,9 +282,9 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
              const randomPhrase = IDLE_PHRASES[Math.floor(Math.random() * IDLE_PHRASES.length)];
              speak(randomPhrase);
         }
-    }, 6000);
+    }, 2000);
     return () => clearInterval(interval);
-  }, [isBubbleVisible, state, speak]);
+  }, [isBubbleVisible, state, speak, isMounted]);
 
 
   // --- CONFIG ---
@@ -249,10 +293,13 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     dancing: { row: 1, steps: 3, speed: 0.5 },
     sleeping: { row: 2, steps: 3, speed: 1.5 },
     eating: { row: 1, steps: 3, speed: 0.2 },
-    sad: { row: 0, steps: 1, speed: 0 }, 
+    // FIXED: Speed cannot be 0 for CSS animation to init correctly in some browsers
+    sad: { row: 0, steps: 1, speed: 1 }, 
   };
   const currentAnim = spriteConfig[state];
   const yPosition = `${currentAnim.row * 50}%`;
+
+  if (!isMounted) return null; // Prevent hydration mismatch
 
   return (
     <>
@@ -264,8 +311,6 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
          <AnimatePresence>
             {isMenuOpen && (
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col gap-3 p-3 bg-white/60 backdrop-blur-md rounded-2xl border border-white/50 w-40">
-                    
-                    {/* STATS BARS */}
                     <div className="flex flex-col gap-1">
                         <div className="flex justify-between text-[10px] font-bold text-pink-600">
                             <span>Hunger</span> <span>{hunger}%</span>
@@ -290,7 +335,6 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
                     
                     <hr className="border-pink-100" />
 
-                    {/* FOOD BUTTONS */}
                     <div className="flex flex-wrap gap-2 justify-center">
                         {SNACKS.map((snack, i) => (
                             <motion.button key={snack.icon} initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} onClick={() => spawnSnack(snack)} className="w-8 h-8 bg-white shadow rounded-full text-lg hover:scale-110">
@@ -307,7 +351,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
         {/* SNACKS IN WORLD */}
         <AnimatePresence>
             {snacks.map(snack => (
-                <motion.div key={snack.id} drag dragConstraints={constraintsRef} whileDrag={{ scale: 1.3 }} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} onDragEnd={(e, info) => handleSnackDrop(snack.id, info, snack.value)} className="absolute pointer-events-auto text-4xl z-[55] cursor-grab">{snack.icon}</motion.div>
+                <motion.div key={snack.id} drag dragConstraints={constraintsRef} whileDrag={{ scale: 1.3 }} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} onDragEnd={(e, info) => handleSnackDrop(snack.id, info, snack.value)} className="top-[50%] left-[50%] absolute pointer-events-auto text-4xl z-[55] cursor-grab">{snack.icon}</motion.div>
             ))}
         </AnimatePresence>
 
@@ -317,15 +361,12 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
           drag 
           dragConstraints={constraintsRef} 
           dragMomentum={false}
-          // 1. TRACK DRAG START
           onDragStart={() => { isDraggingRef.current = true; }}
-          // 2. TRACK DRAG END (with delay to clear click event)
           onDragEnd={() => { setTimeout(() => { isDraggingRef.current = false; }, 150); }}
           whileHover={{ scale: 1.05 }} 
           whileTap={{ scale: 0.95 }}
           className="absolute bottom-4 left-10 w-24 h-24 pointer-events-auto cursor-grab active:cursor-grabbing"
         >
-          {/* Hearts */}
           <div className="absolute inset-0 pointer-events-none flex justify-center items-center z-40">
             <AnimatePresence>
                 {hearts.map(h => (
@@ -334,7 +375,6 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
             </AnimatePresence>
           </div>
 
-          {/* Bubble */}
           <AnimatePresence>
             {isBubbleVisible && (
                 <motion.div 
@@ -367,10 +407,9 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
             animate={state === 'dancing' ? { y: [0, -8, 0] } : { y: 0 }} 
             transition={state === 'dancing' ? { repeat: Infinity, duration: 0.4 } : {}} 
             className="w-full h-full touch-none"
-            // 3. CLICK CHECK IS HERE
             onClick={(e) => { 
                 e.stopPropagation(); 
-                if (isDraggingRef.current) return; // <--- STOP if dragging
+                if (isDraggingRef.current) return; 
                 handleInteract(); 
             }}
           >
