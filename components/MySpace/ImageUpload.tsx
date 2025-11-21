@@ -2,16 +2,22 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { uploadImage } from '@/app/actions';
-import { Loader2, Image as ImageIcon, CheckCircle2, X, AlertCircle } from 'lucide-react';
+import { Loader2, Image as ImageIcon, CheckCircle2, X, AlertCircle, Sparkles, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 export default function ImageUpload() {
   const [isUploading, setIsUploading] = useState(false);
-  
   const [toastStatus, setToastStatus] = useState<'success' | 'error' | null>(null);
   
+  // New states for the customization step
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [customTitle, setCustomTitle] = useState("");
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Handle Toast Timer
   useEffect(() => {
     if (toastStatus) {
       const timer = setTimeout(() => setToastStatus(null), 4000);
@@ -19,32 +25,51 @@ export default function ImageUpload() {
     }
   }, [toastStatus]);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Step 1: Handle File Selection (Don't upload yet!)
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
-    setIsUploading(true);
+    setSelectedFile(file);
+    setPreviewUrl(URL.createObjectURL(file)); // Create visual preview
+    // Default title is the filename without extension, but user can change it
+    setCustomTitle(file.name.split('.')[0]); 
     setToastStatus(null);
+  };
 
+  // Clear selection to go back to button view
+  const handleCancel = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setCustomTitle("");
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  // Step 2: Handle Actual Upload
+  const handleUploadConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) return;
+
+    setIsUploading(true);
+    
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('title', file.name.split('.')[0]); 
+    formData.append('file', selectedFile);
+    formData.append('title', customTitle); // Use the custom title
 
     try {
       await uploadImage(formData);
       setToastStatus('success');
+      handleCancel(); // Reset form on success
     } catch (error) {
       console.error("Upload failed", error);
       setToastStatus('error');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      setIsUploading(false); // Only stop loading on error (on success we reset)
     }
   };
 
   return (
     <>
-      {/* --- TOAST NOTIFICATION OVERLAY --- */}
+      {/* --- TOAST NOTIFICATION OVERLAY (Kept exactly as is) --- */}
       <AnimatePresence>
         {toastStatus && (
           <motion.div
@@ -85,41 +110,85 @@ export default function ImageUpload() {
         )}
       </AnimatePresence>
 
-      {/* --- UPLOAD BUTTON --- */}
-      <div className="mb-8 flex justify-start">
+      {/* --- UPLOAD AREA --- */}
+      <div className="mb-8 flex justify-start w-full max-w-md">
         <input
           type="file"
           ref={fileInputRef}
-          onChange={handleFileChange}
+          onChange={handleFileSelect}
           className="hidden"
           accept="image/*"
         />
         
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          disabled={isUploading}
-          onClick={() => fileInputRef.current?.click()}
-          className={`
-            flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-white shadow-lg shadow-pink-500/30
-            transition-all duration-300
-            ${isUploading 
-              ? 'bg-pink-300 cursor-not-allowed' 
-              : 'bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600'}
-          `}
-        >
-          {isUploading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Uploading...</span>
-            </>
-          ) : (
-            <>
+        <AnimatePresence mode="wait">
+          {!selectedFile ? (
+            // STATE 1: THE BUTTON (Idle)
+            <motion.button
+              key="upload-btn"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-white shadow-lg shadow-pink-500/30 transition-all duration-300 bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600"
+            >
               <ImageIcon className="w-5 h-5" />
               <span>Add Memory</span>
-            </>
+            </motion.button>
+          ) : (
+            // STATE 2: THE CUSTOMIZATION CARD (Selected)
+            <motion.form
+              key="upload-form"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              onSubmit={handleUploadConfirm}
+              className="w-full bg-white p-4 rounded-3xl shadow-xl shadow-pink-500/10 border border-rose-100 flex items-center gap-4"
+            >
+              {/* Tiny Preview */}
+              <div className="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-rose-50 border border-rose-100">
+                 {previewUrl && (
+                   <Image src={previewUrl} alt="Preview" fill className="object-cover" />
+                 )}
+              </div>
+
+              {/* Inputs */}
+              <div className="flex-1 min-w-0">
+                 <div className="flex items-center gap-1 text-[10px] text-rose-300 uppercase font-bold tracking-wider mb-1">
+                    <Sparkles className="w-3 h-3" /> New Memory
+                 </div>
+                 <input 
+                    type="text"
+                    value={customTitle}
+                    onChange={(e) => setCustomTitle(e.target.value)}
+                    placeholder="Name this memory..."
+                    autoFocus
+                    className="w-full bg-transparent border-b border-rose-200 focus:border-rose-500 outline-none text-rose-900 font-medium placeholder:text-rose-300/70 transition-colors pb-0.5"
+                 />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 shrink-0">
+                 <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={isUploading}
+                  className="p-2 rounded-full text-rose-300 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+                 >
+                   <X className="w-5 h-5" />
+                 </button>
+                 <button
+                  type="submit"
+                  disabled={isUploading || !customTitle.trim()}
+                  className="p-2 rounded-full bg-rose-500 text-white shadow-md shadow-rose-500/30 hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                 >
+                   {isUploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                 </button>
+              </div>
+            </motion.form>
           )}
-        </motion.button>
+        </AnimatePresence>
       </div>
     </>
   );

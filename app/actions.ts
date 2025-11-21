@@ -342,3 +342,9 @@ export async function deleteImage(id: number, pathname: string) {
     throw new Error("Failed to delete image");
   }
 }
+
+export async function deleteComment(commentId: number) {
+  await sql`DELETE FROM comments WHERE id = ${commentId}`;
+  revalidatePath('/gallery');
+  return { success: true };
+}
