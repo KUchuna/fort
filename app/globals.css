@@ -41,3 +41,7 @@
 .custom-scrollbar::-webkit-scrollbar-button {
   display: none; /* Remove buttons */
 }
+
+#todo {
+  scrollbar-color: #d1067c transparent; /* Pink thumb, Transparent track */
+}

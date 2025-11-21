@@ -1,5 +1,6 @@
 import CurrentObsession from "@/components/MySpace/CurrentObsession";
 import SpotifyPetWrapper from "@/components/MySpace/SpotifyPetWrapper";
+import ToDos from "@/components/MySpace/ToDos";
 
 export default function MySpace() {
   return (
@@ -11,6 +12,10 @@ export default function MySpace() {
       <CurrentObsession />
       <SpotifyPetWrapper />
       </div>
+      <hr className="my-6"></hr>
+      <section className="w-[40%]">
+        <ToDos />
+      </section>
     </main>
   );
 }

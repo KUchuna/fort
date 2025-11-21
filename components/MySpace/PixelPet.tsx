@@ -145,6 +145,38 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
   const rubCounterRef = useRef(0);
   const lastRubTimeRef = useRef(0);
 
+  const [screenPos, setScreenPos] = useState({ x: 0, y: 0 });
+
+  // NEW: Initialize position near bottom-left once mounted
+  useEffect(() => {
+      if(isMounted && window) {
+          setScreenPos({ x: 50, y: window.innerHeight - 150 })
+      }
+  }, [isMounted]);
+
+  // NEW: Wandering Logic Loop
+  useEffect(() => {
+    if (!isMounted || state === 'sleeping') return;
+
+    const wanderInterval = setInterval(() => {
+        // Don't wander if currently being dragged by user
+        if (isDraggingRef.current) return; 
+
+        // Calculate safe bounds (padding of ~100px from edges)
+        const maxX = window.innerWidth - 120;
+        const maxY = window.innerHeight - 150;
+        const minX = 20;
+        const minY = 50; // Keep below header menu
+
+        const newX = minX + Math.random() * (maxX - minX);
+        const newY = minY + Math.random() * (maxY - minY);
+        
+        setScreenPos({ x: newX, y: newY });
+    }, 7000); // Pick a new spot every 6 seconds
+
+    return () => clearInterval(wanderInterval);
+  }, [isMounted, state]);
+  
   // --- 0. MOUNT & INITIAL SYNC ---
   useEffect(() => {
     setIsMounted(true);
@@ -374,7 +406,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
       {/* MENU with STATS */}
       <div className="fixed top-24 right-4 flex flex-col items-end gap-2 z-[60]">
          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-[10px] uppercase font-bold text-pink-500 bg-white/90 rounded-lg py-2 px-3 shadow border-2 border-pink-100 hover:scale-105 active:scale-95 transition">
-            {isMenuOpen ? "Close ✖" : "Caretaker Menu 🍒"}
+            {isMenuOpen ? "Close ✖" : "Menu 🍒"}
          </button>
          <AnimatePresence>
             {isMenuOpen && (
@@ -424,20 +456,38 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
         </AnimatePresence>
 
         {/* PET CONTAINER */}
-        <motion.div
+          <motion.div
           ref={petRef}
-          drag 
-          dragConstraints={constraintsRef} 
+          drag
+          dragConstraints={constraintsRef}
           dragMomentum={false}
+          // Mark dragging state start
           onDragStart={() => { isDraggingRef.current = true; }}
-          onDragEnd={() => { setTimeout(() => { isDraggingRef.current = false; }, 150); }}
+          // Update state on drop so it resumes floating from here
+          onDragEnd={(e, info) => {
+             setTimeout(() => { isDraggingRef.current = false; }, 150);
+             // info.point is absolute coordinates. Subtract offset to center anchor roughly.
+             setScreenPos({ x: info.point.x - 50, y: info.point.y - 50 });
+          }}
           onMouseMove={handleMouseMoveOverPet}
-          whileHover={{ scale: 1.05 }} 
+          // Animate to the current state position
+          animate={{ x: screenPos.x, y: screenPos.y }}
+          // Floaty transition physics
+          transition={{
+            type: "spring",
+            mass: 3,      // Heavier feel
+            stiffness: 30, // Loose spring
+            damping: 20,   // Slow down gradually
+            restDelta: 0.001 // Wait until fully stopped before next move
+          }}
+          whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="absolute bottom-4 left-10 w-24 h-24 pointer-events-auto cursor-grab active:cursor-grabbing"
+          // REMOVED fixed positions like 'bottom-4 left-18'. Added 'top-0 left-0' as base.
+          className="absolute top-0 left-0 w-24 h-24 pointer-events-auto cursor-grab active:cursor-grabbing z-50"
         >
-          {/* Sleep Particles */}
-          <AnimatePresence>
+           {/* ... content inside (particles, bubbles, sprite) remains unchanged ... */}
+           {/* Sleep Particles */}
+           <AnimatePresence>
             {sleepParticles.map(p => (
                 <ZzzParticle key={p.id} x={p.x} y={p.y} />
             ))}
@@ -455,13 +505,13 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
           {/* Speech Bubble */}
           <AnimatePresence>
             {isBubbleVisible && (
-                <motion.div 
+                <motion.div
                     initial={{ opacity: 0, y: 10, scale: 0.8 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 5, scale: 0.8 }}
                     onClick={(e) => e.stopPropagation()}
                     className={`absolute ${activeQuestion && !isTyping ? "-top-25" : "-top-10"} bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-bold p-3 rounded-2xl shadow-xl border-2 border-pink-200 min-w-[120px] max-w-[200px] z-50 cursor-default`}
-                    style={{ transformOrigin: "bottom right" }} 
+                    style={{ transformOrigin: "bottom right" }}
                 >
                     <div className="mb-2 whitespace-pre-wrap leading-tight text-center">
                         {displayedText}
@@ -481,14 +531,14 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
           </AnimatePresence>
 
           {/* Sprite Animation */}
-          <motion.div 
-            animate={state === 'dancing' ? { y: [0, -8, 0] } : { y: 0 }} 
-            transition={state === 'dancing' ? { repeat: Infinity, duration: 0.4 } : {}} 
+          <motion.div
+            animate={state === 'dancing' ? { y: [0, -8, 0] } : { y: 0 }}
+            transition={state === 'dancing' ? { repeat: Infinity, duration: 0.4 } : {}}
             className="w-full h-full touch-none"
-            onClick={(e) => { 
-                e.stopPropagation(); 
-                if (isDraggingRef.current) return; 
-                handleInteract(); 
+            onClick={(e) => {
+                e.stopPropagation();
+                if (isDraggingRef.current) return;
+                handleInteract();
             }}
           >
              <div key={state} className="w-full h-full" style={{ backgroundImage: "url('/sprite/pet.png')", backgroundRepeat: 'no-repeat', backgroundSize: '400% 300%', backgroundPositionY: yPosition, imageRendering: 'pixelated', transform: isFacingRight ? 'scaleX(1)' : 'scaleX(-1)', animation: `playRow ${currentAnim.speed}s steps(${currentAnim.steps}) infinite alternate` }} />
