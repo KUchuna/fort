@@ -59,12 +59,9 @@ const TRACK_INITIAL_STATE: SpotifyTrack = {
   duration_ms: 0
 }
 
-export default function SpotifyPlayer() {
+export default function SpotifyPlayer({onPlayChange}) {
 
-useEffect(() => {
-    // Check if the page has been loaded via soft-navigation (Next.js Link)
-    // If performance.navigation.type is not "navigate" (0) or "reload" (1), or just force it:
-    
+useEffect(() => {    
     const hasReloaded = sessionStorage.getItem('page_reloaded');
     
     if (!hasReloaded) {
@@ -108,6 +105,7 @@ useEffect(() => {
   const updateState = (state: PlayerState) => {
     setCurrentTrack(state.track_window.current_track)
     setIsPaused(state.paused)
+    onPlayChange(!state.paused)
     setDuration(state.duration)
     setPosition(state.position)
     setShuffleState(state.shuffle)
@@ -418,9 +416,7 @@ const handleTransfer = useCallback(async () => {
   const progressPercent = duration ? (position / duration) * 100 : 0
 
  return (
-    <div className="max-w-[400px] w-full flex flex-col gap-4">
-
-      {/* --- 1. Browser/Playlist UI (ALWAYS VISIBLE) --- */}
+    <div className="min-w-[400px] max-w-[400px] w-full flex flex-col gap-4">
       <div className="w-full bg-[#181818] p-4 rounded-[20px] border border-[#282828] h-[250px] flex flex-col mt-6">
         <div className="flex gap-4 mb-4 border-b border-[#282828] pb-2">
             <button onClick={() => setView('search')} className={`text-sm font-bold transition ${view === 'search' ? 'text-white' : 'text-[#b3b3b3] hover:text-white'}`}>Search</button>
