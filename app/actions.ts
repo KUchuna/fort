@@ -259,6 +259,11 @@ export interface GalleryImage {
   created_at: string;
   pathname: string; 
   comment_count?: number;
+  alt_text: string;
+  width: number;
+  height: number;
+  blur_data_url: string;
+  likes_count: number;
 }
 
 export interface Comment {
