@@ -1,15 +1,22 @@
-import Modal from "@/components/MySpace/Modal"
-import { cookies } from "next/headers";
+import MySpaceAuthModal from "@/components/MySpace/Modal"
+import { verifySession } from '@/lib/auth';
+
+
 
 export default async function MySpaceLayout({ children }: { children: React.ReactNode }) {
 
-    const cookieStore = await cookies()
+const isAuthorized = await verifySession();
 
-    const auth = cookieStore.get("myspace_auth");
-
+    if (!isAuthorized) {
+        return (
+        <div className="min-h-screen flex items-center justify-center">
+            <MySpaceAuthModal />
+        </div>
+        );
+    }
     return (
         <>
-        {!auth ? <Modal /> : children}
+            {children}
         </>
     );
 }

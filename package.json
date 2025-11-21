@@ -13,6 +13,7 @@
     "@vercel/blob": "^2.0.0",
     "embla-carousel-auto-scroll": "^8.6.0",
     "embla-carousel-react": "^8.6.0",
+    "jose": "^6.1.2",
     "lucide-react": "^0.554.0",
     "motion": "^12.23.24",
     "next": "16.0.1",

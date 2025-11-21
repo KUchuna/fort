@@ -2,30 +2,43 @@
 
 import { neon } from "@neondatabase/serverless";
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
+import { createSession } from '@/lib/auth';
+import { verifySession } from '@/lib/auth';
 
 const sql = neon(process.env.DB_DATABASE_URL!);
 
+
+export async function loginAction(password: string) {
+  if (password !== process.env.MYSPACE_PASSWORD) {
+    return { success: false, message: "Incorrect password" };
+  }
+
+  await createSession();
+
+  revalidatePath('/'); 
+  
+  return { success: true };
+}
+
 export async function addObsession(formData: FormData) {
-    const cookieStore = await cookies();
-    const auth = cookieStore.get("myspace_auth");
 
-    if (!auth || auth.value !== "true") {
-        throw new Error("Unauthorized");
-    }
+  const isAuthorized = await verifySession(); 
+  if (!isAuthorized) {
+      throw new Error("Unauthorized");
+  }
 
-    const description = formData.get("description");
+  const description = formData.get("description");
 
-    if (!description || typeof description !== "string") {
-        throw new Error("Description is required and must be a string");
-    }
+  if (!description || typeof description !== "string") {
+      throw new Error("Description is required and must be a string");
+  }
 
-    await sql`
-        INSERT INTO obsession (description) 
-        VALUES (${description})
-    `;
+  await sql`
+      INSERT INTO obsession (description) 
+      VALUES (${description})
+  `;
 
-    revalidatePath("/");
+  revalidatePath("/");
 }
 
 
@@ -172,6 +185,11 @@ export async function setRepeatMode(deviceId: string, state: 'track' | 'context'
 }
 
 export async function addTodo(title: string) {
+  const isAuthorized = await verifySession();
+  if (!isAuthorized) {
+    throw new Error("Unauthorized");
+  }
+  
   if (!title || title.trim().length === 0) return;
 
   const result = await sql`

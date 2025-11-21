@@ -1,26 +1,32 @@
 "use client";
 
 import { useState } from "react";
+// You can remove useRouter if you switch to window.location.reload()
+// import { useRouter } from "next/navigation"; 
+import { loginAction } from "@/app/actions";
 
 export default function MySpaceAuthModal() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  // const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
+    setLoading(true);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_URL}/api/auth-check`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
-    });
+    const result = await loginAction(password);
 
-    const data = await res.json();
-
-    if (data.ok) {
+    if (result.success) {
+      // 1. Success! Force a browser reload. 
+      // This ensures the new 'httpOnly' cookie is recognized 
+      // and the parent page re-renders from scratch (removing this modal).
       window.location.reload(); 
     } else {
-      setError("Incorrect password");
+      // 2. Error: Turn off loading so they can try again
+      setError(result.message || "Something went wrong");
+      setLoading(false); 
     }
   }
 
@@ -36,8 +42,9 @@ export default function MySpaceAuthModal() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="border bg-white focus:outline-none border-accent rounded-lg p-2"
+          className="border bg-white focus:outline-none border-accent rounded-lg p-2 text-black"
           placeholder="Password"
+          disabled={loading}
         />
 
         {error && (
@@ -46,9 +53,10 @@ export default function MySpaceAuthModal() {
 
         <button
           type="submit"
-          className="bg-accent text-white font-bold uppercase rounded-lg p-2"
+          disabled={loading}
+          className="bg-accent text-white font-bold uppercase rounded-lg p-2 disabled:opacity-50 transition-opacity"
         >
-          submit
+          {loading ? "Checking..." : "Submit"}
         </button>
       </form>
     </div>
