@@ -46,7 +46,7 @@ export default function ImageUpload() {
   };
 
   // Step 2: Handle Actual Upload
-  const handleUploadConfirm = async (e: React.FormEvent) => {
+const handleUploadConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) return;
 
@@ -54,16 +54,17 @@ export default function ImageUpload() {
     
     const formData = new FormData();
     formData.append('file', selectedFile);
-    formData.append('title', customTitle); // Use the custom title
+    formData.append('title', customTitle);
 
     try {
       await uploadImage(formData);
       setToastStatus('success');
-      handleCancel(); // Reset form on success
+      handleCancel(); // Reset form
     } catch (error) {
       console.error("Upload failed", error);
       setToastStatus('error');
-      setIsUploading(false); // Only stop loading on error (on success we reset)
+    } finally {
+      setIsUploading(false); // <--- FIXED: This now runs on success too!
     }
   };
 

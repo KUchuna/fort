@@ -2,11 +2,6 @@
 
 import React, { useState } from 'react'
 import { EmblaOptionsType } from 'embla-carousel'
-import {
-  PrevButton,
-  NextButton,
-  usePrevNextButtons
-} from './EmblaCarouselArrowButtons'
 import AutoScroll from 'embla-carousel-auto-scroll'
 import useEmblaCarousel from 'embla-carousel-react'
 import TiltCard from '@/components/Globals/TiltCard'
@@ -32,13 +27,6 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
   const [emblaRef, emblaApi] = useEmblaCarousel(options, [AutoScroll({ playOnInit: true, speed: 2, startDelay: 500, stopOnInteraction: false })])
 
   const [selectedId, setSelectedId] = useState<number | null>(null)
-
-  const {
-    prevBtnDisabled,
-    nextBtnDisabled,
-    onPrevButtonClick,
-    onNextButtonClick
-  } = usePrevNextButtons(emblaApi)
 
   const selectedSlide = slides.find(slide => slide.id === selectedId)
 
@@ -78,13 +66,6 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      <div className="embla__controls mt-4">
-        <div className="embla__buttons flex gap-2">
-          <PrevButton onClick={onPrevButtonClick} disabled={prevBtnDisabled} />
-          <NextButton onClick={onNextButtonClick} disabled={nextBtnDisabled} />
         </div>
       </div>
 
