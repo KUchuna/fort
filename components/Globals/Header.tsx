@@ -22,7 +22,9 @@ export default function Header() {
             whileTap={{scale: 0.9}}
             className="px-2 py-1 rounded-md cursor-pointer bg-main"
           >
-            Gallery
+            <Link href={"/gallery"}>
+              Gallery
+            </Link>
           </motion.li>
 
           <motion.li

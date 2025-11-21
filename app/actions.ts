@@ -123,7 +123,6 @@ export async function startPlayback(deviceId: string, contextUri?: string, track
 
   if (contextUri) {
     body.context_uri = contextUri;
-    // Only add offset if we are selecting a specific track in a playlist
     if (trackUri) {
       body.offset = { uri: trackUri };
     }
@@ -140,7 +139,6 @@ export async function startPlayback(deviceId: string, contextUri?: string, track
     body: JSON.stringify(body),
   });
 
-  // FIX 3: THROW the error so the Client Component can catch it
   if (!res.ok) {
      const txt = await res.text();
      console.error("Start Playback Error:", txt);
@@ -150,19 +148,17 @@ export async function startPlayback(deviceId: string, contextUri?: string, track
 
 export async function toggleShuffle(deviceId: string, state: boolean) {
   const token = await getAccessToken();
-  // Explicitly convert boolean to string 'true'/'false'
   const stateStr = state ? 'true' : 'false';
   
   const res = await fetch(`${SPOTIFY_API}/me/player/shuffle?state=${stateStr}&device_id=${deviceId}`, {
     method: 'PUT',
     headers: { 
         Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json' // standard header for good measure
+        'Content-Type': 'application/json'
     }
   });
 
   if (!res.ok) {
-      // Log error but don't crash app, just let it fail silently or return false
       console.error("Shuffle Toggle Failed:", await res.text());
   }
 }
@@ -178,7 +174,6 @@ export async function setRepeatMode(deviceId: string, state: 'track' | 'context'
 export async function addTodo(title: string) {
   if (!title || title.trim().length === 0) return;
 
-  // FIX: We use RETURNING * to get the real DB ID back immediately
   const result = await sql`
     INSERT INTO todos (title) 
     VALUES (${title})
@@ -186,16 +181,11 @@ export async function addTodo(title: string) {
   `;
   
   revalidatePath('/');
-  return result[0]; // Return the newly created todo
+  return result[0];
 }
 
-// --- UPDATE (Toggle) ---
+
 export async function toggleTodo(id: number, isCompleted: boolean) {
-  // FIX: Crash Prevention
-  // Postgres INTEGER max is 2,147,483,647.
-  // Optimistic IDs (Date.now()) are ~1,700,000,000,000.
-  // If ID is larger than Postgres MAX_INT, it's a temp ID. 
-  // We ignore the DB call because this item doesn't exist in DB yet.
   if (id > 2147483647) return;
 
   await sql`
