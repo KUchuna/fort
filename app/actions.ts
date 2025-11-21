@@ -4,6 +4,8 @@ import { neon } from "@neondatabase/serverless";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
+const sql = neon(process.env.DB_DATABASE_URL!);
+
 export async function addObsession(formData: FormData) {
     const cookieStore = await cookies();
     const auth = cookieStore.get("myspace_auth");
@@ -12,7 +14,6 @@ export async function addObsession(formData: FormData) {
         throw new Error("Unauthorized");
     }
 
-    const sql = neon(`${process.env.DB_DATABASE_URL}`);
     const description = formData.get("description");
 
     if (!description || typeof description !== "string") {
@@ -172,4 +173,49 @@ export async function setRepeatMode(deviceId: string, state: 'track' | 'context'
     method: 'PUT',
     headers: { Authorization: `Bearer ${token}` }
   });
+}
+
+export async function addTodo(title: string) {
+  if (!title || title.trim().length === 0) return;
+
+  // FIX: We use RETURNING * to get the real DB ID back immediately
+  const result = await sql`
+    INSERT INTO todos (title) 
+    VALUES (${title})
+    RETURNING *
+  `;
+  
+  revalidatePath('/');
+  return result[0]; // Return the newly created todo
+}
+
+// --- UPDATE (Toggle) ---
+export async function toggleTodo(id: number, isCompleted: boolean) {
+  // FIX: Crash Prevention
+  // Postgres INTEGER max is 2,147,483,647.
+  // Optimistic IDs (Date.now()) are ~1,700,000,000,000.
+  // If ID is larger than Postgres MAX_INT, it's a temp ID. 
+  // We ignore the DB call because this item doesn't exist in DB yet.
+  if (id > 2147483647) return;
+
+  await sql`
+    UPDATE todos 
+    SET is_completed = ${isCompleted} 
+    WHERE id = ${id}
+  `;
+  
+  revalidatePath('/');
+}
+
+// --- DELETE ---
+export async function deleteTodo(id: number) {
+  // FIX: Crash Prevention (same logic as above)
+  if (id > 2147483647) return;
+
+  await sql`
+    DELETE FROM todos 
+    WHERE id = ${id}
+  `;
+  
+  revalidatePath('/');
 }

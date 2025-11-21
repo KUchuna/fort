@@ -18,3 +18,11 @@ export async function getObsession() {
     return null;
   }
 }
+
+export async function getTodos() {
+  const todos = await sql`
+    SELECT * FROM todos 
+    ORDER BY created_at DESC
+  `;
+  return todos;
+}

@@ -1,8 +1,13 @@
 import CurrentObsession from "@/components/MySpace/CurrentObsession";
 import SpotifyPetWrapper from "@/components/MySpace/SpotifyPetWrapper";
 import ToDos from "@/components/MySpace/ToDos";
+import { getTodos } from '../../api';
 
-export default function MySpace() {
+
+export default async function MySpace() {
+
+  const todos = await getTodos()
+
   return (
     <main className="pt-6 relative">
       <h1 className="text-4xl font-semibold">Welcome, Tamar ✨</h1>
@@ -14,7 +19,7 @@ export default function MySpace() {
       </div>
       <hr className="my-6"></hr>
       <section className="w-[40%]">
-        <ToDos />
+        <ToDos todosData={todos}/>
       </section>
     </main>
   );

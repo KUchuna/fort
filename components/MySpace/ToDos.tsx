@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Trash2, Check, Sparkles, Loader2, X, Heart } from 'lucide-react';
+import { addTodo, toggleTodo, deleteTodo } from '@/app/actions';
 
 // --- Types ---
 interface Todo {
@@ -12,56 +13,43 @@ interface Todo {
   created_at: string;
 }
 
-// --- Mock Data ---
-const INITIAL_TODOS: Todo[] = [
-  { id: 1, title: 'Buy fresh flowers 🌸', is_completed: true, created_at: new Date().toISOString() },
-  { id: 2, title: 'Skincare routine', is_completed: false, created_at: new Date().toISOString() },
-  { id: 3, title: 'Plan brunch date', is_completed: false, created_at: new Date().toISOString() },
-];
+interface TodosProps {
+  todosData: Todo[] | any
+}
 
-export default function FloatingTodo() {
+export default function FloatingTodo({todosData}: TodosProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [todos, setTodos] = useState<Todo[]>(INITIAL_TODOS);
+  const [todos, setTodos] = useState<Todo[]>(todosData);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // --- Mock Actions ---
-  const fetchTodos = async () => {
-    setIsLoading(true);
-    setTimeout(() => setIsLoading(false), 600);
-  };
-
   const handleAddTodo = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
-    setIsSubmitting(true);
-    setTimeout(() => {
-      const newTodo: Todo = {
-        id: Date.now(),
-        title: inputValue,
-        is_completed: false,
-        created_at: new Date().toISOString(),
-      };
-      setTodos(prev => [newTodo, ...prev]);
-      setInputValue('');
-      setIsSubmitting(false);
-      // Scroll to top logic could go here
-    }, 400);
-  };
+  e.preventDefault();
+  if (!inputValue.trim()) return;
+  
+  setIsSubmitting(true);
+  
+  const tempId = Date.now();
+  const newTodo = { id: tempId, title: inputValue, is_completed: false, created_at: new Date().toISOString() };
+  setTodos(prev => [newTodo, ...prev]);
+  setInputValue('');
 
-  const handleToggleTodo = (id: number) => {
-    setTodos(prev => prev.map(t => 
-      t.id === id ? { ...t, is_completed: !t.is_completed } : t
-    ));
-  };
+  await addTodo(inputValue); 
+  
+  setIsSubmitting(false);
+};
 
-  const handleDeleteTodo = (id: number) => {
+const handleToggleTodo = async (id: number, currentStatus: boolean) => {
+    setTodos(prev => prev.map(t => t.id === id ? { ...t, is_completed: !t.is_completed } : t));
+    await toggleTodo(id, !currentStatus);
+};
+
+const handleDeleteTodo = async (id: number) => {
     setTodos(prev => prev.filter(t => t.id !== id));
-  };
-
-  // Focus input when menu opens
+    await deleteTodo(id);
+};
   useEffect(() => {
     if (isOpen && !isLoading) {
       setTimeout(() => inputRef.current?.focus(), 300);
@@ -71,9 +59,7 @@ export default function FloatingTodo() {
   const pendingTodos = todos.filter(t => !t.is_completed).length;
 
   return (
-    <div className="fixed bottom-8 left-6 z-50 flex flex-col items-end gap-4 font-sans" id='todo'>
-      
-      {/* Expandable Menu Card */}
+    <div className="fixed bottom-8 left-6 z-50 flex flex-col items-end gap-4 font-sans" id='todo'>      
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -81,7 +67,7 @@ export default function FloatingTodo() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="w-80 sm:w-96 max-h-[600px] bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl shadow-pink-500/20 rounded-3xl overflow-hidden flex flex-col"
+            className="w-80 sm:w-96 h-[400px] bg-white/90 backdrop-blur-xl border border-white/50 shadow-2xl shadow-pink-500/20 rounded-3xl overflow-hidden flex flex-col"
             id="todo"
           >
             {/* Header */}
@@ -163,7 +149,7 @@ export default function FloatingTodo() {
                           className="group bg-white hover:bg-rose-50 border border-rose-100 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:shadow-md hover:shadow-pink-100 transition-all duration-300"
                         >
                           <button
-                            onClick={() => handleToggleTodo(todo.id)}
+                            onClick={() => handleToggleTodo(todo.id, todo.is_completed)}
                             className={`
                               flex-shrink-0 w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center transition-all duration-300
                               ${todo.is_completed 

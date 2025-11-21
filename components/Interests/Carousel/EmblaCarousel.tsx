@@ -89,7 +89,7 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
       </div>
 
       {/* 2. The Expanded Overlay */}
-      <AnimatePresence >
+      <AnimatePresence mode="wait">
         {selectedId !== null && (
           <motion.div 
             className="fixed inset-0 z-50 flex items-start justify-center pt-6 pointer-events-none"
