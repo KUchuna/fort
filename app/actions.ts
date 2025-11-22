@@ -83,7 +83,7 @@ export async function getAccessToken() {
 
 export async function searchSpotify(query: string) {
   const token = await getAccessToken();
-  const res = await fetch(`${SPOTIFY_API}/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
+  const res = await fetch(`${SPOTIFY_API}/search?q=${encodeURIComponent(query)}&type=track&limit=20`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return res.json();
@@ -91,7 +91,15 @@ export async function searchSpotify(query: string) {
 
 export async function getUserPlaylists() {
   const token = await getAccessToken();
-  const res = await fetch(`${SPOTIFY_API}/me/playlists?limit=20`, {
+  const res = await fetch(`${SPOTIFY_API}/me/playlists?limit=50`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return res.json();
+}
+
+export async function getUserLikedSongs() {
+  const token = await getAccessToken();
+  const res = await fetch(`${SPOTIFY_API}/me/tracks?limit=50`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return res.json();

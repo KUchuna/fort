@@ -13,7 +13,8 @@ import {
   getPlaylistDetails, 
   startPlayback,
   toggleShuffle,
-  setRepeatMode
+  setRepeatMode,
+  // getUserLikedSongs // We will replace this with a manual recursive fetch
 } from '@/app/actions'
 
 // --- Interfaces ---
@@ -44,6 +45,7 @@ interface Playlist {
   uri: string;
   href: string;
   tracks: { total: number };
+  _localTracks?: SpotifyTrack[]; // Added optional property for Liked Songs
 }
 
 const formatTime = (ms: number) => {
@@ -112,13 +114,65 @@ useEffect(() => {
     setRepeatState(state.repeat_mode)
   }
 
-  // --- 1. Load Playlists Independently ---
+  // --- 1. Load Playlists & Recursively Load Liked Songs ---
   useEffect(() => {
-    getUserPlaylists()
-      .then(data => {
-         if(data.items) setPlaylists(data.items)
-      })
-      .catch(err => console.error("Failed to load playlists", err));
+    const loadMusicData = async () => {
+      try {
+        const token = await getAccessToken();
+        
+        // 1. Define recursive fetcher
+        const fetchAllLikedSongs = async () => {
+          let allTracks: SpotifyTrack[] = [];
+          let url = 'https://api.spotify.com/v1/me/tracks?limit=50'; // Max limit per call
+
+          while (url) {
+            const res = await fetch(url, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+            if (!res.ok) break;
+            const data = await res.json();
+            
+            if (data.items) {
+               // Extract track data from the wrapper
+               const tracks = data.items.map((item: any) => item.track);
+               allTracks = [...allTracks, ...tracks];
+            }
+            
+            // Spotify returns null when pages are done
+            url = data.next;
+          }
+          return allTracks;
+        };
+
+        // 2. Run fetches in parallel
+        const [likedTracks, playlistsData] = await Promise.all([
+          fetchAllLikedSongs(),
+          getUserPlaylists()
+        ]);
+
+        // 3. Construct Liked Songs Object
+        // We attach the tracks directly to a hidden property `_localTracks`
+        // because this isn't a real playlist with an ID we can fetch later.
+        const likedSongsPlaylist: Playlist = {
+          id: 'liked-songs',
+          name: 'Liked Songs',
+          images: [{ url: 'https://misc.scdn.co/liked-songs/liked-songs-300.png' }],
+          uri: 'spotify:user:me:collection', // Generic URI
+          href: '',
+          tracks: { total: likedTracks.length },
+          _localTracks: likedTracks 
+        };
+
+        const allPlaylists = [likedSongsPlaylist, ...(playlistsData.items || [])];
+        setPlaylists(allPlaylists);
+
+      } catch (err) {
+        console.error("Failed to load music data", err);
+      }
+    };
+
+    loadMusicData();
   }, []);
 
   // --- 2. Initialize Player ---
@@ -280,7 +334,12 @@ useEffect(() => {
 
     // Helper to try playing
     const attemptPlay = async () => {
-      await startPlayback(deviceId, contextUri, trackUri);
+      // If playing from Liked Songs (which isn't a real context), send trackUri only
+      if (contextUri === 'spotify:user:me:collection') {
+         await startPlayback(deviceId, undefined, trackUri);
+      } else {
+         await startPlayback(deviceId, contextUri, trackUri);
+      }
     }
 
     try {
@@ -318,6 +377,14 @@ useEffect(() => {
 
   const handleOpenPlaylist = async (playlist: Playlist) => {
     try {
+      // MODIFICATION: Check if it is the local "Liked Songs" playlist
+      if (playlist.id === 'liked-songs' && playlist._localTracks) {
+         setSelectedPlaylist({ info: playlist, tracks: playlist._localTracks })
+         setView('playlist-detail')
+         return;
+      }
+
+      // Normal playlist behavior (Fetch from API)
       const details = await getPlaylistDetails(playlist.href)
       const tracks = details.tracks.items.map((item: any) => item.track).filter((t: any) => t)
       setSelectedPlaylist({ info: playlist, tracks })
@@ -454,7 +521,7 @@ const handleTransfer = useCallback(async () => {
                 <div className="flex flex-col gap-2">
                     {playlists.length === 0 && <p className="text-xs text-[#7a7a7a] text-center mt-4">No playlists found or loading...</p>}
                     {playlists.map(pl => (
-                         <div key={pl.id} onClick={() => handleOpenPlaylist(pl)} className="flex items-center gap-3 p-2 hover:bg-[#282828] rounded-md cursor-pointer transition">
+                          <div key={pl.id} onClick={() => handleOpenPlaylist(pl)} className="flex items-center gap-3 p-2 hover:bg-[#282828] rounded-md cursor-pointer transition">
                              <div className="w-12 h-12 relative shrink-0 bg-[#333]">
                                     {pl.images?.[0] && <Image src={pl.images[0].url} fill alt="art" className="object-cover rounded" />}
                             </div>
