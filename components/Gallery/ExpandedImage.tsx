@@ -1,9 +1,10 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { getComments, addComment, deleteComment } from '@/app/actions';
-import { X, Trash2, Send, MessageCircle } from 'lucide-react';
+import { X, Trash2, Send, MessageCircle, Smile } from 'lucide-react';
+import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 // import { GalleryImage, Comment } from '@/types'; // Uncomment if you moved types to a separate file
 
 interface GalleryImage {
@@ -37,7 +38,7 @@ interface ExpandedImageProps {
 export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImageProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [showEmoji, setShowEmoji] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [nickname, setNickname] = useState('Guest');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,6 +69,10 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
   const handleDelete = async (id: number) => {
     await deleteComment(id);
     setComments((prev) => prev.filter((c) => c.id !== id));
+  };
+
+  const onEmojiClick = (emojiData: EmojiClickData) => {
+      setCommentText((prev) => prev + emojiData.emoji);
   };
 
   return (
@@ -170,6 +175,7 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
           <div className="p-6 bg-white border-t border-[var(--color-main)] shrink-0">
             <form onSubmit={handlePostComment} className="flex flex-col gap-3">
               <div className="flex gap-2">
+                <span className="self-center text-sm text-gray-500">Name:</span>
                 <input
                   type="text"
                   placeholder="Nickname"
@@ -179,6 +185,31 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
                 />
               </div>
               <div className="relative">
+                 <AnimatePresence>
+                  {showEmoji && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                      className="absolute bottom-40 z-50 shadow-2xl rounded-2xl overflow-hidden"
+                    >
+                      <EmojiPicker 
+                          onEmojiClick={onEmojiClick} 
+                          theme={Theme.LIGHT}
+                          searchDisabled
+                          width={300}
+                          height={350}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <button 
+                    type="button"
+                    onClick={() => setShowEmoji(!showEmoji)}
+                    className="p-2.5 rounded-full hover:bg-main text-accent transition-colors mb-2"
+                >
+                    <Smile size={22} />
+                </button>
                 <textarea
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
