@@ -1,15 +1,13 @@
 "use client";
 
 import { useState } from "react";
-// You can remove useRouter if you switch to window.location.reload()
-// import { useRouter } from "next/navigation"; 
 import { loginAction } from "@/app/actions";
+import { redirect } from "next/navigation";
 
-export default function MySpaceAuthModal() {
+export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  // const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,12 +17,8 @@ export default function MySpaceAuthModal() {
     const result = await loginAction(password);
 
     if (result.success) {
-      // 1. Success! Force a browser reload. 
-      // This ensures the new 'httpOnly' cookie is recognized 
-      // and the parent page re-renders from scratch (removing this modal).
-      window.location.reload(); 
+      redirect("/myspace") 
     } else {
-      // 2. Error: Turn off loading so they can try again
       setError(result.message || "Something went wrong");
       setLoading(false); 
     }
