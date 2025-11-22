@@ -14,7 +14,6 @@ import {
   startPlayback,
   toggleShuffle,
   setRepeatMode,
-  // getUserLikedSongs // We will replace this with a manual recursive fetch
 } from '@/app/actions'
 
 // --- Interfaces ---
@@ -45,7 +44,6 @@ interface Playlist {
   uri: string;
   href: string;
   tracks: { total: number };
-  _localTracks?: SpotifyTrack[]; // Added optional property for Liked Songs
 }
 
 const formatTime = (ms: number) => {
@@ -63,14 +61,12 @@ const TRACK_INITIAL_STATE: SpotifyTrack = {
 
 export default function SpotifyPlayer({onPlayChange}) {
 
-useEffect(() => {    
+  useEffect(() => {    
     const hasReloaded = sessionStorage.getItem('page_reloaded');
-    
     if (!hasReloaded) {
       sessionStorage.setItem('page_reloaded', 'true');
       window.location.reload();
     } else {
-      // Clear it so it reloads next time you visit
       return () => sessionStorage.removeItem('page_reloaded');
     }
   }, []);
@@ -88,20 +84,24 @@ useEffect(() => {
   const [error, setError] = useState<string | null>(null)
 
   // --- Feature State ---
-  const [view, setView] = useState<'search' | 'playlists' | 'playlist-detail'>('search')
+  const [view, setView] = useState<'search' | 'playlists' | 'liked-songs' | 'playlist-detail'>('search')
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<SpotifyTrack[]>([])
+  
   const [playlists, setPlaylists] = useState<Playlist[]>([])
+  const [likedSongs, setLikedSongs] = useState<SpotifyTrack[]>([])
   const [selectedPlaylist, setSelectedPlaylist] = useState<{ info: Playlist, tracks: SpotifyTrack[] } | null>(null)
+  
+  const [activeContext, setActiveContext] = useState<'playlist' | 'liked-songs' | 'none'>('none')
+
   const [shuffleState, setShuffleState] = useState(false)
   const [repeatState, setRepeatState] = useState<0 | 1 | 2>(0)
 
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null)
   const seekDebounceRef = useRef<NodeJS.Timeout | null>(null)
   const playerRef = useRef<Spotify.Player | null>(null)
-  
-  // NEW: Debounce Ref
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const trackHasStartedRef = useRef(false)
 
   // --- Helper: Update State ---
   const updateState = (state: PlayerState) => {
@@ -110,130 +110,55 @@ useEffect(() => {
     onPlayChange(!state.paused)
     setDuration(state.duration)
     setPosition(state.position)
+    
     setShuffleState(state.shuffle)
     setRepeatState(state.repeat_mode)
   }
 
-  // --- 1. Load Playlists & Recursively Load Liked Songs ---
+  // --- 1. Load Data ---
   useEffect(() => {
     const loadMusicData = async () => {
       try {
         const token = await getAccessToken();
         
-        // 1. Define recursive fetcher
-        const fetchAllLikedSongs = async () => {
+        const fetchLikedSongs = async () => {
           let allTracks: SpotifyTrack[] = [];
-          let url = 'https://api.spotify.com/v1/me/tracks?limit=50'; // Max limit per call
-
+          let url = 'https://api.spotify.com/v1/me/tracks?limit=50'; 
           while (url) {
-            const res = await fetch(url, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
             if (!res.ok) break;
             const data = await res.json();
-            
             if (data.items) {
-               // Extract track data from the wrapper
                const tracks = data.items.map((item: any) => item.track);
                allTracks = [...allTracks, ...tracks];
             }
-            
-            // Spotify returns null when pages are done
             url = data.next;
           }
-          return allTracks;
+          setLikedSongs(allTracks);
         };
 
-        // 2. Run fetches in parallel
-        const [likedTracks, playlistsData] = await Promise.all([
-          fetchAllLikedSongs(),
-          getUserPlaylists()
-        ]);
-
-        // 3. Construct Liked Songs Object
-        // We attach the tracks directly to a hidden property `_localTracks`
-        // because this isn't a real playlist with an ID we can fetch later.
-        const likedSongsPlaylist: Playlist = {
-          id: 'liked-songs',
-          name: 'Liked Songs',
-          images: [{ url: 'https://misc.scdn.co/liked-songs/liked-songs-300.png' }],
-          uri: 'spotify:user:me:collection', // Generic URI
-          href: '',
-          tracks: { total: likedTracks.length },
-          _localTracks: likedTracks 
+        const fetchPlaylists = async () => {
+             const data = await getUserPlaylists();
+             if(data.items) setPlaylists(data.items);
         };
 
-        const allPlaylists = [likedSongsPlaylist, ...(playlistsData.items || [])];
-        setPlaylists(allPlaylists);
+        fetchLikedSongs();
+        fetchPlaylists();
 
       } catch (err) {
         console.error("Failed to load music data", err);
       }
     };
-
     loadMusicData();
   }, []);
 
   // --- 2. Initialize Player ---
-  const initializePlayer = useCallback(async () => {
-    if (playerRef.current) {
-      setPlayer(playerRef.current)
-      return
-    }
-
-    const spotifyPlayer = new window.Spotify.Player({
-      name: 'My Personal Page',
-      getOAuthToken: async (cb) => { 
-        try {
-          const token = await getAccessToken()
-          cb(token)
-        } catch (err) {
-          console.error(err)
-        }
-      },
-      volume: 0.5
-    })
-
-    playerRef.current = spotifyPlayer
-    setPlayer(spotifyPlayer)
-
-    spotifyPlayer.addListener('ready', ({ device_id }) => {
-      console.log('Ready with Device ID', device_id)
-      setError(null)
-      setDeviceId(device_id)
-
-      spotifyPlayer.getCurrentState().then(state => {
-        if (state) {
-          updateState(state)
-          setIsActive(true)
-        }
-      })
-    })
-
-    spotifyPlayer.addListener('player_state_changed', (state: PlayerState | null) => {
-      if (!state) return
-      updateState(state)
-      setIsActive(true)
-    })
-
-    spotifyPlayer.addListener('initialization_error', ({ message }) => setError(`Init error: ${message}`))
-    spotifyPlayer.addListener('authentication_error', ({ message }) => setError(`Auth error: ${message}`))
-    spotifyPlayer.addListener('account_error', ({ message }) => setError(`Account error: ${message}`))
-
-    const connected = await spotifyPlayer.connect()
-    if (!connected) setError('Failed to connect to Spotify')
-  }, [])
-
-  // --- 3. Load SDK & Handle Re-Mount ---
   useEffect(() => {
     let isMounted = true;
 
     const initializePlayer = async () => {
-      // 1. SAFETY DELAY: Wait 100ms for any old players to fully disconnect
       await new Promise(resolve => setTimeout(resolve, 100));
-      
-      if (!isMounted) return; // Stop if user left the page during the delay
+      if (!isMounted) return; 
 
       const spotifyPlayer = new window.Spotify.Player({
         name: 'My Personal Page',
@@ -261,10 +186,10 @@ useEffect(() => {
         updateState(state)
         setIsActive(true)
       })
-
-      spotifyPlayer.addListener('initialization_error', ({ message }) => console.error(message))
-      spotifyPlayer.addListener('authentication_error', ({ message }) => console.error(message))
-      spotifyPlayer.addListener('account_error', ({ message }) => console.error(message))
+      
+      spotifyPlayer.addListener('initialization_error', ({ message }) => setError(`Init error: ${message}`))
+      spotifyPlayer.addListener('authentication_error', ({ message }) => setError(`Auth error: ${message}`))
+      spotifyPlayer.addListener('account_error', ({ message }) => setError(`Account error: ${message}`))
 
       spotifyPlayer.connect()
     }
@@ -279,45 +204,36 @@ useEffect(() => {
       document.body.appendChild(script)
     }
 
-    // CLEANUP: This runs instantly when you leave the page
     return () => {
       isMounted = false;
-      if (playerRef.current) {
-        playerRef.current.disconnect();
-      }
+      if (playerRef.current) playerRef.current.disconnect();
     }
   }, [])
 
-  // --- 4. Progress Interval ---
+  // --- 3. Progress Interval ---
   useEffect(() => {
     if (progressTimerRef.current) clearInterval(progressTimerRef.current)
+    
     if (!isPaused && player) {
+      if (position > 0) trackHasStartedRef.current = true;
+
       progressTimerRef.current = setInterval(() => {
         setPosition(prev => (prev + 1000 > duration ? duration : prev + 1000))
       }, 1000)
     }
     return () => { if (progressTimerRef.current) clearInterval(progressTimerRef.current) }
-  }, [isPaused, duration, player])
+  }, [isPaused, duration, player, position])
 
 
   // --- Handlers ---
-  
-  // NEW: Debounced Search Handler
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
     setSearchQuery(val)
-
-    // Clear existing timer
-    if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current)
-    }
-
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current)
     if (val.trim().length === 0) {
       setSearchResults([])
       return
     }
-
-    // Set new timer (500ms debounce)
     searchTimeoutRef.current = setTimeout(async () => {
         try {
             const data = await searchSpotify(val)
@@ -326,65 +242,44 @@ useEffect(() => {
     }, 500)
   }
 
-  const handlePlayTrack = async (trackUri: string, contextUri?: string) => {
+  const handlePlayTrack = useCallback(async (trackUri: string, contextUri?: string, origin: 'playlist' | 'liked-songs' | 'none' = 'none') => {
     if (!deviceId || !player) {
       setError("Player loading... please wait.");
       return;
     }
 
-    // Helper to try playing
+    trackHasStartedRef.current = false; 
+    setActiveContext(origin)
+
     const attemptPlay = async () => {
-      // If playing from Liked Songs (which isn't a real context), send trackUri only
-      if (contextUri === 'spotify:user:me:collection') {
-         await startPlayback(deviceId, undefined, trackUri);
-      } else {
+      if (contextUri && contextUri !== 'spotify:user:me:collection') {
          await startPlayback(deviceId, contextUri, trackUri);
+      } else {
+         await startPlayback(deviceId, undefined, trackUri);
       }
     }
 
     try {
-      // 1. Authorize interaction (Browser requirement)
       await player.activateElement();
-
-      // 2. Try to play normally
       try {
         await attemptPlay();
       } catch (firstError) {
-        // 3. IF IT FAILS (Common on page reload):
-        // The device exists locally but isn't "Active" on Spotify servers yet.
-        console.warn("First play attempt failed. Activating device...", firstError);
-        
-        // 4. Force a transfer to this device to wake it up
+        console.warn("Retry playback...", firstError);
         await transferPlayback(deviceId);
-        
-        // 5. Wait 500ms for the transfer to register
         await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // 6. Try playing again
         await attemptPlay();
       }
-
-      // Success!
       setIsActive(true);
       setIsPaused(false);
       setError(null);
-
     } catch (finalError: any) {
-      console.error("Playback failed after retry", finalError);
-      setError("Could not play. Please click 'Connect Player' manually if this persists.");
+      console.error("Playback failed", finalError);
+      setError("Could not play.");
     }
-  }
+  }, [deviceId, player]);
 
   const handleOpenPlaylist = async (playlist: Playlist) => {
     try {
-      // MODIFICATION: Check if it is the local "Liked Songs" playlist
-      if (playlist.id === 'liked-songs' && playlist._localTracks) {
-         setSelectedPlaylist({ info: playlist, tracks: playlist._localTracks })
-         setView('playlist-detail')
-         return;
-      }
-
-      // Normal playlist behavior (Fetch from API)
       const details = await getPlaylistDetails(playlist.href)
       const tracks = details.tracks.items.map((item: any) => item.track).filter((t: any) => t)
       setSelectedPlaylist({ info: playlist, tracks })
@@ -392,19 +287,14 @@ useEffect(() => {
     } catch (err) { console.error(err) }
   }
 
- const handleToggleShuffle = async () => {
-      // 1. Optimistic Update (Change UI immediately)
+  const handleToggleShuffle = async () => {
       const oldState = shuffleState;
       const newState = !oldState;
-      setShuffleState(newState);
-
+      setShuffleState(newState); // Optimistic update
       try {
-          // 2. Call API
           await toggleShuffle(deviceId, newState);
       } catch (err) {
-          // 3. Revert if it failed
-          console.error(err);
-          setShuffleState(oldState);
+          console.log("Shuffle API toggle might have failed (expected for Liked Songs), but local state updated.");
       }
   }
 
@@ -430,54 +320,83 @@ useEffect(() => {
     player.setVolume(vol);
   }, [player]);
 
-  const handlePrevious = useCallback(() => player?.previousTrack(), [player])
   const handleTogglePlay = useCallback(() => player?.togglePlay(), [player])
-  const handleNext = useCallback(() => player?.nextTrack(), [player])
 
-
-
-const handleTransfer = useCallback(async () => {
-    if (!deviceId || !player) {
-      setError("Device not ready yet")
-      return
-    }
+  const handleTransfer = useCallback(async () => {
+    if (!deviceId || !player) return
     setIsLoading(true)
-    setError(null)
-    
     try {
-    
       await player.activateElement();
-
-     
       await transferPlayback(deviceId)
-      
-    
       const state = await player.getCurrentState()
       if (state) {
           updateState(state)
           setIsActive(true)
       }
-    } catch (err: any) {
-      console.error(err)
-      setError("Transfer failed. Try playing a song directly from the list below.")
+    } catch (err) {
+      setError("Transfer failed.")
     } finally {
       setIsLoading(false)
     }
-}, [deviceId, player])
+  }, [deviceId, player])
+
+  // --- NEXT / PREVIOUS LOGIC (Wrapped in useCallback) ---
+  const handleNext = useCallback(async () => {
+    if (activeContext === 'liked-songs') {
+        const currentIndex = likedSongs.findIndex(t => t.uri === currentTrack.uri || t.id === currentTrack.id)
+        
+        if (currentIndex !== -1) {
+            let nextIndex;
+            if (shuffleState) {
+                nextIndex = Math.floor(Math.random() * likedSongs.length);
+                if (likedSongs.length > 1 && nextIndex === currentIndex) {
+                    nextIndex = (nextIndex + 1) % likedSongs.length;
+                }
+            } else {
+                nextIndex = currentIndex < likedSongs.length - 1 ? currentIndex + 1 : 0
+            }
+            const nextTrack = likedSongs[nextIndex]
+            await handlePlayTrack(nextTrack.uri!, undefined, 'liked-songs')
+        }
+    } else {
+        player?.nextTrack()
+    }
+  }, [activeContext, likedSongs, currentTrack, shuffleState, player, handlePlayTrack]);
+
+  const handlePrevious = useCallback(async () => {
+    if (activeContext === 'liked-songs') {
+        const currentIndex = likedSongs.findIndex(t => t.uri === currentTrack.uri || t.id === currentTrack.id)
+        if (currentIndex !== -1) {
+            const prevIndex = currentIndex > 0 ? currentIndex - 1 : likedSongs.length - 1
+            const prevTrack = likedSongs[prevIndex]
+            await handlePlayTrack(prevTrack.uri!, undefined, 'liked-songs')
+        }
+    } else {
+        player?.previousTrack()
+    }
+  }, [activeContext, likedSongs, currentTrack, player, handlePlayTrack]);
+
+  // --- AUTO-ADVANCE EFFECT (Fixed Dependency Array) ---
+  useEffect(() => {
+    if (activeContext === 'liked-songs') {
+        if (isPaused && position === 0 && trackHasStartedRef.current) {
+            console.log("Track finished manually, advancing...");
+            trackHasStartedRef.current = false; 
+            handleNext();
+        }
+    }
+  }, [isPaused, position, activeContext, handleNext]); // <--- Fixed: removed likedSongs/currentTrack/shuffleState to allow handleNext to handle it via closure
 
 
- 
   if (error) return (
     <div className="flex flex-col items-center justify-center p-6 bg-red-950/80 backdrop-blur-md rounded-2xl border border-red-800 w-full max-w-md text-center">
       <h3 className="text-white font-bold mb-2">Error</h3>
       <p className="text-red-300 text-sm mb-4">{error}</p>
-      <button onClick={() => { setError(null); initializePlayer() }}
+      <button onClick={() => { setError(null); window.location.reload() }}
         className="px-6 py-2 bg-red-500 text-white rounded-full font-medium hover:bg-red-400 transition-all hover:scale-105 active:scale-95"
       >Retry</button>
     </div>
   )
-
-
 
   const hasAlbumArt = currentTrack.album.images[0]?.url
   const progressPercent = duration ? (position / duration) * 100 : 0
@@ -485,12 +404,17 @@ const handleTransfer = useCallback(async () => {
  return (
     <div className="min-w-[400px] max-w-[400px] w-full flex flex-col gap-4">
       <div className="w-full bg-[#181818] p-4 rounded-[20px] border border-[#282828] h-[250px] flex flex-col mt-6">
+        
+        {/* --- TOP NAVIGATION --- */}
         <div className="flex gap-4 mb-4 border-b border-[#282828] pb-2">
             <button onClick={() => setView('search')} className={`text-sm font-bold transition ${view === 'search' ? 'text-white' : 'text-[#b3b3b3] hover:text-white'}`}>Search</button>
-            <button onClick={() => setView('playlists')} className={`text-sm font-bold transition ${view.includes('playlist') ? 'text-white' : 'text-[#b3b3b3] hover:text-white'}`}>Playlists</button>
+            <button onClick={() => setView('playlists')} className={`text-sm font-bold transition ${view === 'playlists' || view === 'playlist-detail' ? 'text-white' : 'text-[#b3b3b3] hover:text-white'}`}>Playlists</button>
+            <button onClick={() => setView('liked-songs')} className={`text-sm font-bold transition ${view === 'liked-songs' ? 'text-[#1DB954]' : 'text-[#b3b3b3] hover:text-[#1DB954]'}`}>Liked Songs</button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2">
+            
+            {/* --- VIEW: SEARCH --- */}
             {view === 'search' && (
                 <>
                     <input 
@@ -517,6 +441,7 @@ const handleTransfer = useCallback(async () => {
                 </>
             )}
 
+            {/* --- VIEW: PLAYLISTS --- */}
             {view === 'playlists' && (
                 <div className="flex flex-col gap-2">
                     {playlists.length === 0 && <p className="text-xs text-[#7a7a7a] text-center mt-4">No playlists found or loading...</p>}
@@ -534,6 +459,41 @@ const handleTransfer = useCallback(async () => {
                 </div>
             )}
 
+            {/* --- VIEW: LIKED SONGS --- */}
+            {view === 'liked-songs' && (
+                <div className="flex flex-col">
+                    <div className="flex items-center gap-3 mb-4 p-2 bg-gradient-to-r from-[#450af5] to-[#c4efd9]/10 rounded-md">
+                        <div className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-[#450af5] to-[#8e8e8e] text-white rounded-md shadow-lg">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        </div>
+                        <div>
+                            <h3 className="text-white font-bold text-md">Liked Songs</h3>
+                            <p className="text-xs text-white/70">{likedSongs.length} songs</p>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                        {likedSongs.length === 0 && <p className="text-xs text-[#7a7a7a] text-center mt-4">Loading Liked Songs...</p>}
+                        {likedSongs.map((track, idx) => (
+                            <div 
+                                id={`track-${track.id}`}
+                                key={`${track.id}-${idx}`} 
+                                onClick={() => handlePlayTrack(track.uri!, undefined, 'liked-songs')} 
+                                className="flex items-center gap-3 p-2 hover:bg-[#282828] rounded-md cursor-pointer group transition"
+                            >
+                                <span className="text-xs text-[#7a7a7a] w-4 text-center group-hover:hidden">{idx + 1}</span>
+                                <span className="text-xs text-white w-4 text-center hidden group-hover:block">▶</span>
+                                <div className="flex-1 min-w-0">
+                                    <p className={`text-sm truncate ${currentTrack.uri === track.uri ? 'text-[#1DB954]' : 'text-white'}`}>{track.name}</p>
+                                    <p className="text-xs text-[#b3b3b3] truncate">{track.artists[0].name}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* --- VIEW: PLAYLIST DETAIL --- */}
             {view === 'playlist-detail' && selectedPlaylist && (
                 <div className="flex flex-col">
                       <button onClick={() => setView('playlists')} className="flex items-center gap-1 text-xs text-[#b3b3b3] hover:text-white mb-3 w-fit">
@@ -547,7 +507,12 @@ const handleTransfer = useCallback(async () => {
                       </div>
                       <div className="flex flex-col gap-1">
                         {selectedPlaylist.tracks.map((track, idx) => (
-                            <div key={`${track.id}-${idx}`} onClick={() => handlePlayTrack(track.uri!, selectedPlaylist.info.uri)} className="flex items-center gap-3 p-2 hover:bg-[#282828] rounded-md cursor-pointer group transition">
+                            <div 
+                                id={`track-${track.id}`}
+                                key={`${track.id}-${idx}`} 
+                                onClick={() => handlePlayTrack(track.uri!, selectedPlaylist.info.uri, 'playlist')} 
+                                className="flex items-center gap-3 p-2 hover:bg-[#282828] rounded-md cursor-pointer group transition"
+                            >
                                 <span className="text-xs text-[#7a7a7a] w-4 text-center group-hover:hidden">{idx + 1}</span>
                                 <span className="text-xs text-white w-4 text-center hidden group-hover:block">▶</span>
                                 <div className="flex-1 min-w-0">
@@ -615,7 +580,6 @@ const handleTransfer = useCallback(async () => {
            <div className="flex items-center justify-between">
              <div className="flex items-center gap-2 w-24 group">
     <div className="relative w-full h-1 rounded-full bg-[#4d4d4d] flex items-center">
-        {/* The Invisible Slider (Captures Clicks/Drags) */}
         <input 
             type="range" 
             min={0} 
@@ -625,14 +589,10 @@ const handleTransfer = useCallback(async () => {
             onChange={handleVolume} 
             className="absolute w-full h-3 opacity-0 z-20 cursor-pointer -top-1" 
         />
-        
-        {/* The Visual Track (White -> Green on Hover) */}
         <div 
             className="h-full rounded-full bg-[#b3b3b3] group-hover:bg-[#1db954] transition-colors z-10" 
             style={{ width: `${volume * 100}%` }} 
         />
-        
-        {/* The Handle (Hidden -> Visible on Hover) */}
         <div 
             className="absolute h-3 w-3 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none"
             style={{ left: `calc(${volume * 100}% - 6px)` }}

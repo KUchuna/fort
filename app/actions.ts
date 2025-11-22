@@ -2,11 +2,21 @@
 
 import { neon } from "@neondatabase/serverless";
 import { revalidatePath } from "next/cache";
-import { createSession } from '@/lib/auth';
-import { verifySession } from '@/lib/auth';
+import { createSession, createChatSession, verifySession} from '@/lib/auth';
 import { put, del } from '@vercel/blob';
+import Pusher from 'pusher';
+import { redirect } from "next/navigation";
 
 const sql = neon(process.env.DB_DATABASE_URL!);
+const SPOTIFY_API = 'https://api.spotify.com/v1';
+
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID!,       // Private
+  key: process.env.NEXT_PUBLIC_PUSHER_KEY!, // Public
+  secret: process.env.PUSHER_SECRET!,     // Private
+  cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!, // Public
+  useTLS: true
+});
 
 
 export async function loginAction(password: string) {
@@ -43,7 +53,7 @@ export async function addObsession(formData: FormData) {
 }
 
 
-const SPOTIFY_API = 'https://api.spotify.com/v1';
+
 
 export async function getAccessToken() {
   const refresh_token = process.env.SPOTIFY_REFRESH_TOKEN;
@@ -79,7 +89,6 @@ export async function getAccessToken() {
   const data = await response.json();
   return data.access_token;
 }
-// --- New Features Functions ---
 
 export async function searchSpotify(query: string) {
   const token = await getAccessToken();
@@ -360,4 +369,43 @@ export async function deleteComment(commentId: number) {
   await sql`DELETE FROM comments WHERE id = ${commentId}`;
   revalidatePath('/gallery');
   return { success: true };
+}
+
+export async function sendMessage(formData: FormData) {
+  const text = formData.get('text') as string;
+  const username = 'Guest ' + Math.floor(Math.random() * 1000); 
+
+  if (!text) return;
+
+  await sql`
+    INSERT INTO messages (text, username) 
+    VALUES (${text}, ${username})
+  `;
+
+  await pusher.trigger('global-chat', 'new-message', {
+    text,
+    username,
+    timestamp: new Date().toISOString()
+  });
+}
+
+export async function getChatHistory() {
+  const messages = await sql`
+    SELECT * FROM messages 
+    ORDER BY created_at DESC 
+    LIMIT 50
+  `;
+  return messages.reverse();
+}
+
+
+export async function loginToChat(prevState: any, formData: FormData) {
+  const password = formData.get('password') as string;
+
+  if (password === process.env.CHAT_PASSWORD) {
+    await createChatSession();
+    redirect('/chatroom');
+  } else {
+    return { error: 'Oops! Wrong password 🎀' };
+  }
 }
