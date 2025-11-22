@@ -24,8 +24,8 @@ export default async function GalleryPage() {
                 <h1 className="text-5xl font-medium mb-4 uppercase">
                     Image Gallery
                 </h1>
-                <p className="text-[var(--color-accent)] text-lg font-medium">
-                    {isAdmin ? 'Welcome back, Tamar.' : 'Browse my collection.'}
+                <p className="text-accent text-lg font-medium uppercase">
+                    {isAdmin ? 'Welcome back, Tamar.' : 'Browse my collection'}
                 </p>
                 </div>
                 <InteractiveGallery 

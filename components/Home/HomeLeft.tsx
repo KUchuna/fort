@@ -41,7 +41,7 @@ export default function HomeLeft({obsession}: HomeLeftProps) {
                 transition={{ type: "spring", stiffness: 200, damping: 15 }}
                 className="flex flex-1 container relative group">
                     <p className="mt-auto 3xl:w-5/7 3xl:text-lg text-sm">
-                        I’m an outgoing and endlessly curious person who loves saying yes to new experiences - whether it’s discovering hidden places, trying something completely unexpected, or meeting people with stories that spark my imagination. I’m happiest when life feels a little adventurous, a little chaotic, and full of possibility. I like to think of myself as someone who brings energy and warmth wherever I go, someone who laughs easily, connects quickly, and embraces every moment with an open mind. If there’s something new to explore, I’m already on my way.
+                        I’m an outgoing and endlessly curious person who loves saying yes to new experiences - whether it’s discovering hidden places, trying something completely unexpected, or meeting people with stories that spark my imagination. I’m happiest when life feels a little adventurous, a little chaotic, and full of possibility.
                     </p>
                     <Image src={circle} alt="" width={100} height={100} className="absolute left-6 top-6 group-hover:-rotate-90 transition-all duration-200 w-[50px] 3xl:w-[100px]"/>
                 </motion.div>

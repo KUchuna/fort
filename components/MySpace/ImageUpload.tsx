@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useRef, useEffect } from 'react';
-import { uploadImage } from '@/app/actions';
+import { saveImageToDb } from '@/app/actions';
 import { Loader2, Image as ImageIcon, CheckCircle2, X, AlertCircle, Sparkles, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
+import { upload } from '@vercel/blob/client';
 
 export default function ImageUpload() {
   const [isUploading, setIsUploading] = useState(false);
@@ -31,13 +32,11 @@ export default function ImageUpload() {
 
     const file = e.target.files[0];
     setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file)); // Create visual preview
-    // Default title is the filename without extension, but user can change it
+    setPreviewUrl(URL.createObjectURL(file)); 
     setCustomTitle(file.name.split('.')[0]); 
     setToastStatus(null);
   };
 
-  // Clear selection to go back to button view
   const handleCancel = () => {
     setSelectedFile(null);
     setPreviewUrl(null);
@@ -45,28 +44,27 @@ export default function ImageUpload() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Step 2: Handle Actual Upload
 const handleUploadConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) return;
-
     setIsUploading(true);
-    
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('title', customTitle);
 
     try {
-      await uploadImage(formData);
+      const newBlob = await upload(selectedFile.name, selectedFile, {
+        access: 'public',
+        handleUploadUrl: '/api/upload',
+      });
+      await saveImageToDb(newBlob.url, newBlob.pathname, customTitle);
       setToastStatus('success');
-      handleCancel(); // Reset form
+      handleCancel();
     } catch (error) {
       console.error("Upload failed", error);
       setToastStatus('error');
     } finally {
-      setIsUploading(false); // <--- FIXED: This now runs on success too!
+      setIsUploading(false);
     }
-  };
+};
+
 
   return (
     <>

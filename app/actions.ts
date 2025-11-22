@@ -296,26 +296,26 @@ export async function getComments(imageId: number) {
   return comments as Comment[];
 }
 
-export async function uploadImage(formData: FormData) {
-  const file = formData.get('file') as File;
-  const title = formData.get('title') as string || 'Untitled';
-
-  if (!file) {
-    throw new Error('No file provided');
+export async function saveImageToDb(url: string, pathname: string, title: string) {
+  
+  if (!url || !pathname) {
+    throw new Error('Missing required image data');
   }
 
-  const blob = await put(file.name, file, {
-    access: 'public',
-    addRandomSuffix: true,
-  });
+  const safeTitle = title || 'Untitled';
 
-  await sql`
-    INSERT INTO images (url, pathname, title) 
-    VALUES (${blob.url}, ${blob.pathname}, ${title})
-  `;
+  try {
+    await sql`
+      INSERT INTO images (url, pathname, title) 
+      VALUES (${url}, ${pathname}, ${safeTitle})
+    `;
 
-  revalidatePath('/gallery');
-  return { success: true };
+    revalidatePath('/gallery');
+    return { success: true };
+  } catch (error) {
+    console.error('Database Error:', error);
+    throw new Error('Failed to save image to database');
+  }
 }
 
 export async function addComment(imageId: number, content: string, userName: string = 'Guest') {
