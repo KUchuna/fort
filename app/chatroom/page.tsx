@@ -1,4 +1,4 @@
-import LiveChat from "@/components/LiveChat";
+import LiveChat from "@/components/Chatroom/LiveChat";
 import { verifyChatAccess } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
