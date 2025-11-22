@@ -48,7 +48,7 @@ export default function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#F8AFA6] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-all shadow-lg shadow-[#F8AFA6]/30 flex justify-center items-center group"
+          className="w-full bg-accent hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-all shadow-lg shadow-accent/30 flex justify-center items-center group"
         >
           {loading ? "Checking..." : "Submit"}
         </button>

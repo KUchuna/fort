@@ -6,7 +6,6 @@ import { motion } from 'framer-motion';
 import { Loader2, AlertCircle, Sparkles } from 'lucide-react';
 
 export default function ChatLoginForm() {
-  // state will contain the return value of loginToChat (e.g., { error: '...' })
   const [state, formAction, isPending] = useActionState(loginToChat, null);
 
   return (

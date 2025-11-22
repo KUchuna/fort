@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export default function HomeRight() {
     return (
-        <section className="flex flex-col gap-6 w-[30%] flex-1">
+        <section className="flex flex-col gap-6 w-full lg:w-[30%] flex-1">
             <div className="container flex flex-col gap-6 h-full">
                 <Link href={"/interests"} className="flex flex-col group cursor-pointer gap-6">
                     <div className="w-full flex items-center gap-2  cursor-pointer justify-between">
@@ -32,7 +32,7 @@ export default function HomeRight() {
                     ))}
                 </ul>
             </div>
-            <ul className="container flex gap-6 justify-center">
+            <ul className="container flex flex-wrap gap-6 justify-center">
                 {[{social: "instagram", link: "https://www.instagram.com/t4tuli/"}
 
                 ,{social: "facebook", link: "https://www.facebook.com/taaatuch"},{social: "linkedin", link: "https://www.linkedin.com/in/tamar-chirgadze-44b82720a/"}].map((item) => (
