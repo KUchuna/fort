@@ -15,7 +15,7 @@ export default function Header() {
 
   return (
     // Preserved original header styling exactly
-    <header className="bg-main p-6 rounded-[20px] text-lg uppercase">
+    <header className="bg-main p-6 md:rounded-[20px] sticky md:static top-0 z-1000 text-lg uppercase">
       <div className="flex justify-between items-center">
         <Link href={"/"} className="uppercase">
           <i>Tamar</i> <span className="font-semibold">Chirgadze</span>

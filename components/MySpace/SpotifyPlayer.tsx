@@ -385,7 +385,7 @@ export default function SpotifyPlayer({onPlayChange}) {
             handleNext();
         }
     }
-  }, [isPaused, position, activeContext, handleNext]); // <--- Fixed: removed likedSongs/currentTrack/shuffleState to allow handleNext to handle it via closure
+  }, [isPaused, position, activeContext, handleNext]); 
 
 
   if (error) return (
@@ -402,14 +402,15 @@ export default function SpotifyPlayer({onPlayChange}) {
   const progressPercent = duration ? (position / duration) * 100 : 0
 
  return (
-    <div className="min-w-[400px] max-w-[400px] w-full flex flex-col gap-4">
-      <div className="w-full bg-[#181818] p-4 rounded-[20px] border border-[#282828] h-[250px] flex flex-col mt-6">
+    // Changed from min-w-[400px] max-w-[400px] to flexible width on mobile, fixed on desktop
+    <div className="w-full md:w-[400px] flex flex-col gap-4">
+      <div className="w-full bg-[#181818] p-4 rounded-[20px] border border-[#282828] h-[250px] flex flex-col mt-0 lg:mt-6">
         
         {/* --- TOP NAVIGATION --- */}
-        <div className="flex gap-4 mb-4 border-b border-[#282828] pb-2">
-            <button onClick={() => setView('search')} className={`text-sm font-bold transition ${view === 'search' ? 'text-white' : 'text-[#b3b3b3] hover:text-white'}`}>Search</button>
-            <button onClick={() => setView('playlists')} className={`text-sm font-bold transition ${view === 'playlists' || view === 'playlist-detail' ? 'text-white' : 'text-[#b3b3b3] hover:text-white'}`}>Playlists</button>
-            <button onClick={() => setView('liked-songs')} className={`text-sm font-bold transition ${view === 'liked-songs' ? 'text-[#1DB954]' : 'text-[#b3b3b3] hover:text-[#1DB954]'}`}>Liked Songs</button>
+        <div className="flex gap-4 mb-4 border-b border-[#282828] pb-2 overflow-x-auto">
+            <button onClick={() => setView('search')} className={`text-sm font-bold transition whitespace-nowrap ${view === 'search' ? 'text-white' : 'text-[#b3b3b3] hover:text-white'}`}>Search</button>
+            <button onClick={() => setView('playlists')} className={`text-sm font-bold transition whitespace-nowrap ${view === 'playlists' || view === 'playlist-detail' ? 'text-white' : 'text-[#b3b3b3] hover:text-white'}`}>Playlists</button>
+            <button onClick={() => setView('liked-songs')} className={`text-sm font-bold transition whitespace-nowrap ${view === 'liked-songs' ? 'text-[#1DB954]' : 'text-[#b3b3b3] hover:text-[#1DB954]'}`}>Liked Songs</button>
         </div>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 space-y-2">
@@ -544,7 +545,7 @@ export default function SpotifyPlayer({onPlayChange}) {
            <div className="flex items-center gap-4 mb-6">
              <motion.div 
                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-               className="relative w-20 h-20 rounded-lg overflow-hidden shadow-lg shrink-0 bg-[#282828] group"
+               className="relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden shadow-lg shrink-0 bg-[#282828] group"
              >
                {hasAlbumArt ? (
                  <Image src={hasAlbumArt} alt="Album Art" fill className="object-cover" sizes="56px" priority />
@@ -556,10 +557,10 @@ export default function SpotifyPlayer({onPlayChange}) {
              </motion.div>
              
              <div className="flex-1 min-w-0 overflow-hidden flex flex-col justify-center">
-               <motion.h3 key={currentTrack.name} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-bold text-white text-[15px] truncate hover:underline cursor-pointer">
+               <motion.h3 key={currentTrack.name} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-bold text-white text-sm md:text-[15px] truncate hover:underline cursor-pointer">
                  {currentTrack.name || "No track playing"}
                </motion.h3>
-               <p className="text-[12px] text-[#b3b3b3] truncate hover:text-white hover:underline cursor-pointer transition-colors">
+               <p className="text-xs md:text-[12px] text-[#b3b3b3] truncate hover:text-white hover:underline cursor-pointer transition-colors">
                  {currentTrack.artists[0]?.name || "Unknown artist"}
                </p>
              </div>
@@ -578,38 +579,39 @@ export default function SpotifyPlayer({onPlayChange}) {
            </div>
 
            <div className="flex items-center justify-between">
-             <div className="flex items-center gap-2 w-24 group">
-    <div className="relative w-full h-1 rounded-full bg-[#4d4d4d] flex items-center">
-        <input 
-            type="range" 
-            min={0} 
-            max={1} 
-            step={0.01} 
-            value={volume} 
-            onChange={handleVolume} 
-            className="absolute w-full h-3 opacity-0 z-20 cursor-pointer -top-1" 
-        />
-        <div 
-            className="h-full rounded-full bg-[#b3b3b3] group-hover:bg-[#1db954] transition-colors z-10" 
-            style={{ width: `${volume * 100}%` }} 
-        />
-        <div 
-            className="absolute h-3 w-3 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none"
-            style={{ left: `calc(${volume * 100}% - 6px)` }}
-        />
-    </div>
-</div>
+             {/* Hidden on very small screens to save space */}
+             <div className="hidden sm:flex items-center gap-2 w-20 md:w-24 group">
+                <div className="relative w-full h-1 rounded-full bg-[#4d4d4d] flex items-center">
+                    <input 
+                        type="range" 
+                        min={0} 
+                        max={1} 
+                        step={0.01} 
+                        value={volume} 
+                        onChange={handleVolume} 
+                        className="absolute w-full h-3 opacity-0 z-20 cursor-pointer -top-1" 
+                    />
+                    <div 
+                        className="h-full rounded-full bg-[#b3b3b3] group-hover:bg-[#1db954] transition-colors z-10" 
+                        style={{ width: `${volume * 100}%` }} 
+                    />
+                    <div 
+                        className="absolute h-3 w-3 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none"
+                        style={{ left: `calc(${volume * 100}% - 6px)` }}
+                    />
+                </div>
+            </div>
 
-             <div className="flex items-center gap-3">
+             <div className="flex items-center gap-3 md:gap-3 mx-auto sm:mx-0">
                <button 
-  onClick={handleToggleShuffle} 
-  className={`transition ${shuffleState ? 'text-[#1db954] hover:text-[#1ed760]' : 'text-[#b3b3b3] hover:text-white'}`}
-  aria-label="Toggle Shuffle"
->
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
-    </svg>
-</button>
+                  onClick={handleToggleShuffle} 
+                  className={`transition ${shuffleState ? 'text-[#1db954] hover:text-[#1ed760]' : 'text-[#b3b3b3] hover:text-white'}`}
+                  aria-label="Toggle Shuffle"
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+                    </svg>
+                </button>
 
                <button className="text-[#b3b3b3] hover:text-white transition" onClick={handlePrevious}>
                  <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3.3 1a.7.7 0 0 1 .7.7v5.15l9.95-5.744a.7.7 0 0 1 1.05.606v12.575a.7.7 0 0 1-1.05.607L4 9.149V14.3a.7.7 0 0 1-.7.7H1.7a.7.7 0 0 1-.7-.7V1.7a.7.7 0 0 1 .7-.7h1.6z"/></svg>

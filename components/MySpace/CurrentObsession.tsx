@@ -56,7 +56,9 @@ export default function CurrentObsession() {
   }
 
   return (
-    <div className="min-h-[400px] flex justify-center mt-6 rounded-3xl">
+    // Removed min-h-[400px] constraint for mobile to let it fit content naturally
+    // lg:min-h-[400px] preserves desktop spacing
+    <div className="flex justify-center mt-0 lg:mt-6 rounded-3xl w-full">
       
       <AnimatePresence>
         {toastStatus && (
@@ -100,10 +102,10 @@ export default function CurrentObsession() {
 
       <section className="w-full max-w-lg">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-rose-400 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
-            Current Obsession <Sparkles className="text-pink-400 w-6 h-6" />
+          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rose-400 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
+            Current Obsession <Sparkles className="text-pink-400 w-5 h-5 md:w-6 md:h-6" />
           </h1>
-          <p className="text-slate-500 mt-2">
+          <p className="text-slate-500 mt-2 text-sm md:text-base">
             Update your current obsession (this will be shown on the home page):
           </p>
         </div>
@@ -115,7 +117,7 @@ export default function CurrentObsession() {
               name="description" 
               className={`
                 w-full border rounded-[20px] resize-none outline-none px-6 py-4 min-h-[150px] text-slate-700 shadow-sm transition-all duration-300
-                focus:ring-4 focus:ring-pink-100
+                focus:ring-4 focus:ring-pink-100 text-sm md:text-base
                 ${error 
                   ? "border-rose-300 focus:border-rose-400 bg-rose-50/50" 
                   : "border-slate-200 focus:border-pink-300 bg-white"}
@@ -146,7 +148,7 @@ export default function CurrentObsession() {
             type="submit"
             className={`
               flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl font-bold text-white shadow-lg shadow-pink-500/30 
-              transition-all duration-300 ml-auto mt-2
+              transition-all duration-300 ml-auto mt-2 w-full md:w-auto
               ${isSubmitting 
                 ? "bg-pink-300 cursor-not-allowed" 
                 : "bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 hover:shadow-pink-500/40"}

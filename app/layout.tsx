@@ -36,7 +36,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`bg-background ${gilroy.variable} h-full`}>
-      <body className="p-6 h-full">
+      <body className="md:p-6 h-full">
         <Header/>
         <Loader>
           {children}
