@@ -9,33 +9,33 @@ export default function Header() {
         <Link href={"/"} className="uppercase"><i>Tamar</i> <span className="font-semibold">Chirgadze</span></Link>
 
         <ul className="flex gap-6 font-light select-none">
-          <motion.li
-            whileHover={{ backgroundColor: "#F8AFA6", scale: 1.1 }}
-            whileTap={{scale: 0.9}}
-            className="px-2 py-1 rounded-md cursor-pointer bg-main"
-          >
-            About Me
-          </motion.li>
-
-          <motion.li
-            whileHover={{ backgroundColor: "#F8AFA6", scale: 1.1 }}
-            whileTap={{scale: 0.9}}
-            className="px-2 py-1 rounded-md cursor-pointer bg-main"
-          >
-            <Link href={"/gallery"}>
-              Gallery
-            </Link>
-          </motion.li>
-
-          <motion.li
-            whileHover={{ backgroundColor: "#F8AFA6", scale: 1.1 }}
-            whileTap={{scale: 0.9}}
-            className="px-2 py-1 rounded-md cursor-pointer bg-main"
-          >
-            <Link href={"/myspace"}>
-              Personal Space
-            </Link>
-          </motion.li>
+          <Link href={"/gallery"}>
+            <motion.li
+              whileHover={{ backgroundColor: "#F8AFA6", scale: 1.1 }}
+              whileTap={{scale: 0.9}}
+              className="px-2 py-1 rounded-md cursor-pointer bg-main"
+            >
+                Gallery
+            </motion.li>
+          </Link>
+          <Link href={"/chatroom"}>
+            <motion.li
+              whileHover={{ backgroundColor: "#F8AFA6", scale: 1.1 }}
+              whileTap={{scale: 0.9}}
+              className="px-2 py-1 rounded-md cursor-pointer bg-main"
+            >
+                Chatroom
+            </motion.li>
+          </Link>
+          <Link href={"/myspace"}>
+            <motion.li
+              whileHover={{ backgroundColor: "#F8AFA6", scale: 1.1 }}
+              whileTap={{scale: 0.9}}
+              className="px-2 py-1 rounded-md cursor-pointer bg-main"
+            >
+                Personal Space
+            </motion.li>
+          </Link>
         </ul>
       </div>
     </header>

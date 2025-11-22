@@ -56,7 +56,7 @@ export default function CurrentObsession() {
   }
 
   return (
-    <div className="min-h-[400px] flex justify-center mt-6 bg-slate-50/50 rounded-3xl">
+    <div className="min-h-[400px] flex justify-center mt-6 rounded-3xl">
       
       <AnimatePresence>
         {toastStatus && (
