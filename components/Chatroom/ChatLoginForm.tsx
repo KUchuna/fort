@@ -10,12 +10,8 @@ export default function ChatLoginForm() {
   const [state, formAction, isPending] = useActionState(loginToChat, null);
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center bg-[#F9F1F0] overflow-hidden font-[family-name:var(--font-gilroy)]">
+    <div className="min-h-screen relative flex items-center justify-center bg-[#F9F1F0] overflow-hidden ">
       
-      {/* --- Decorative Background Blobs (Matching the Chat Room) --- */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-[#FADCD9] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-[#F8AFA6] rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000" />
-
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -28,7 +24,7 @@ export default function ChatLoginForm() {
         </div>
 
         <h1 className="text-2xl font-bold text-[#F8AFA6] mb-2 tracking-tight">
-            Secret Chat 🤫
+            Secret Chat
         </h1>
         <p className="text-black/40 mb-8 text-sm font-medium">
             Enter the password to join the squad.
