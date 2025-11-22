@@ -9,6 +9,15 @@ export default function Header() {
         <Link href={"/"} className="uppercase"><i>Tamar</i> <span className="font-semibold">Chirgadze</span></Link>
 
         <ul className="flex gap-6 font-light select-none">
+          <Link href={"/interests"}>
+            <motion.li
+              whileHover={{ backgroundColor: "#F8AFA6", scale: 1.1 }}
+              whileTap={{scale: 0.9}}
+              className="px-2 py-1 rounded-md cursor-pointer bg-main"
+            >
+                About me
+            </motion.li>
+          </Link>
           <Link href={"/gallery"}>
             <motion.li
               whileHover={{ backgroundColor: "#F8AFA6", scale: 1.1 }}

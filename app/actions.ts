@@ -6,6 +6,7 @@ import { createSession, createChatSession, verifySession} from '@/lib/auth';
 import { put, del } from '@vercel/blob';
 import Pusher from 'pusher';
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 const sql = neon(process.env.DB_DATABASE_URL!);
 const SPOTIFY_API = 'https://api.spotify.com/v1';
@@ -257,7 +258,6 @@ export async function toggleTodo(id: number, isCompleted: boolean) {
 
 
 export async function deleteTodo(id: number) {
-  // FIX: Crash Prevention (same logic as above)
   if (id > 2147483647) return;
 
   await sql`
@@ -371,11 +371,27 @@ export async function deleteComment(commentId: number) {
   return { success: true };
 }
 
+
+
+export async function setNickname(formData: FormData) {
+  const nickname = formData.get('nickname') as string;
+  if (!nickname) return;
+
+  const cookieStore = await cookies();
+  
+  cookieStore.set('chat_nickname', nickname, { 
+    maxAge: 60 * 60 * 24 * 30 
+  });
+}
+
 export async function sendMessage(formData: FormData) {
   const text = formData.get('text') as string;
-  const username = 'Guest ' + Math.floor(Math.random() * 1000); 
-
   if (!text) return;
+
+  const cookieStore = await cookies();
+  const storedName = cookieStore.get('chat_nickname')?.value;
+
+  const username = storedName || 'Guest ' + Math.floor(Math.random() * 1000); 
 
   await sql`
     INSERT INTO messages (text, username) 
@@ -388,7 +404,6 @@ export async function sendMessage(formData: FormData) {
     timestamp: new Date().toISOString()
   });
 }
-
 export async function getChatHistory() {
   const messages = await sql`
     SELECT * FROM messages 
