@@ -85,7 +85,7 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
 
       <motion.div
         layoutId={`card-${image.id}`}
-        className="relative w-full max-w-5xl h-[92vh] md:h-[85vh] bg-[var(--color-background)] rounded-xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row z-10"
+        className="relative w-full max-w-5xl h-[82vh] md:h-[85vh] bg-[var(--color-background)] rounded-xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row z-10"
       >
         <button
           onClick={onClose}
