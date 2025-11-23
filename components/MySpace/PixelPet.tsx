@@ -171,7 +171,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
         const newY = minY + Math.random() * (maxY - minY);
         
         setScreenPos({ x: newX, y: newY });
-    }, 7000); // Pick a new spot every 6 seconds
+    }, 7000);
 
     return () => clearInterval(wanderInterval);
   }, [isMounted, state]);
@@ -355,7 +355,7 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
              const randomPhrase = IDLE_PHRASES[Math.floor(Math.random() * IDLE_PHRASES.length)];
              speak(randomPhrase);
         }
-    }, 3000); // Every 8 seconds check
+    }, 7000);
     return () => clearInterval(interval);
   }, [isBubbleVisible, state, speak, isMounted]);
 

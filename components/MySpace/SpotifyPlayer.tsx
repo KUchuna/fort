@@ -402,8 +402,7 @@ export default function SpotifyPlayer({onPlayChange}) {
   const progressPercent = duration ? (position / duration) * 100 : 0
 
  return (
-    // Changed from min-w-[400px] max-w-[400px] to flexible width on mobile, fixed on desktop
-    <div className="w-full md:w-[400px] flex flex-col gap-4">
+    <div className="w-full max-w-[300px] md:max-w-[400px] md:w-[400px] flex flex-col gap-4">
       <div className="w-full bg-[#181818] p-4 rounded-[20px] border border-[#282828] h-[250px] flex flex-col mt-0 lg:mt-6">
         
         {/* --- TOP NAVIGATION --- */}

@@ -56,9 +56,7 @@ export default function CurrentObsession() {
   }
 
   return (
-    // Removed min-h-[400px] constraint for mobile to let it fit content naturally
-    // lg:min-h-[400px] preserves desktop spacing
-    <div className="flex justify-center mt-0 lg:mt-6 rounded-3xl w-full">
+    <div className="flex justify-start mt-0 lg:mt-6 rounded-3xl w-full">
       
       <AnimatePresence>
         {toastStatus && (
