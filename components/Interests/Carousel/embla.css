@@ -1,32 +1,46 @@
 .embla {
   margin: auto;
   padding: 24px 0;
+  
+  /* --- RESPONSIVE VARIABLES --- */
+  /* Mobile Default: Show mostly one slide */
   --slide-height: 19rem;
-  --slide-spacing: 2rem;
-  --slide-size: 30%;
+  --slide-spacing: 1rem; 
+  --slide-size: 80%; 
+}
+
+/* Tablet (sm/md): Show 2 slides */
+@media (min-width: 640px) {
+  .embla {
+    --slide-spacing: 1.6rem;
+    --slide-size: 45%;
+  }
+}
+
+/* Desktop (lg): Show 3 slides (Your original settings) */
+@media (min-width: 1024px) {
+  .embla {
+    --slide-spacing: 2rem;
+    --slide-size: 30%;
+  }
 }
 
 .embla__viewport {
-  overflow-x: hidden;
-  padding: 24px;
-  position: relative;
   overflow: hidden;
+  position: relative;
+  
+  /* On mobile, use less padding so images are larger */
+  padding: 12px; 
 
   /* Subtle edge blur */
-  -webkit-mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 5%,
-    black 95%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to right,
-    transparent 0%,
-    black 5%,
-    black 95%,
-    transparent 100%
-  );
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+}
+
+@media (min-width: 768px) {
+  .embla__viewport {
+    padding: 24px; /* Restore larger padding on desktop */
+  }
 }
 
 .embla__container {
@@ -34,12 +48,15 @@
   touch-action: pan-y pinch-zoom;
   margin-left: calc(var(--slide-spacing) * -1);
 }
+
 .embla__slide {
   transform: translate3d(0, 0, 0);
   flex: 0 0 var(--slide-size);
   min-width: 0;
   padding-left: var(--slide-spacing);
 }
+
+/* ... Keep your existing button styles below ... */
 .embla__slide__number {
   box-shadow: inset 0 0 0 0.2rem var(--detail-medium-contrast);
   border-radius: 1.8rem;

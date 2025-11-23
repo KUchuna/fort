@@ -43,7 +43,6 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
                     className="relative w-full h-69 rounded-xl overflow-hidden"
                     layoutId={`card-container-${slide.id}`}
                   >
-                  {/* Image */}
                     <motion.div
                       layoutId={`card-image-container-${slide.id}`}
                       className="absolute inset-0 z-10"
@@ -57,7 +56,6 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
                         height={1000}
                       />
                     </motion.div>
-                  {/* Title */}
                     <motion.div className="absolute bottom-0 left-0 p-4 z-30">
                       <h2 className="text-white font-bold">{slide.title}</h2>
                     </motion.div>
@@ -69,7 +67,6 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
         </div>
       </div>
 
-      {/* 2. The Expanded Overlay */}
       <AnimatePresence mode="wait">
         {selectedId !== null && (
           <motion.div 
@@ -85,15 +82,13 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
               className="absolute inset-0 bg-black/60 backdrop-blur-sm pointer-events-auto"
             />
 
-            {/* The Expanded Card */}
             <motion.div
               layoutId={`card-container-${selectedId}`}
-              className="relative w-full h-max max-w-[45%] bg-black rounded-2xl overflow-hidden shadow-2xl flex flex-col pointer-events-auto"
+              className="relative w-full h-max max-w-[90%] md:max-w-[45%] bg-black rounded-2xl overflow-hidden shadow-2xl flex flex-col pointer-events-auto my-auto"
               transition={{
                 layout: { type: "spring", stiffness: 300, damping: 40 },
               }}
             >
-              {/* Image Container for the expanded card */}
               <motion.div
                 layoutId={`card-image-container-${selectedId}`}
                 className="w-full relative shrink-0 overflow-hidden"
@@ -119,12 +114,9 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
               </motion.div>
 
               <div className="p-6 text-white">
-                <h2 className="text-3xl font-bold mb-4">Expanded Card Title {selectedId}</h2>
+                <h2 className="text-3xl font-bold mb-4">{selectedSlide?.title}</h2>
                 <p className="leading-relaxed text-sm">
-                  This is a short description of the card. It provides just enough detail
-                  to inform the user without overwhelming them. We've limited the content
-                  to ensure it fits nicely without needing a scrollbar, creating a cleaner
-                  and more focused presentation.
+                  {selectedSlide?.description}
                 </p>
               </div>
             </motion.div>

@@ -12,7 +12,7 @@ export default async function MySpace() {
   const images = await getImages();
 
   return (
-    <main className="pt-6 pb-20 relative px-4 md:px-0">
+    <main className="pb-20 relative px-4 md:px-0 pt-20">
       <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-rose-400 to-pink-600 bg-clip-text text-transparent">Welcome, Tamar ✨</h1>
       <p className="italic mb-4 text-sm md:text-base">This is your private space, which only you can access.</p>
       <hr />

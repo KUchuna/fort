@@ -1,97 +1,168 @@
 "use client";
-import { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import Link from "next/link";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    if (latest > 50) {
+      setIsScrolled(true);
+    } else {
+      setIsScrolled(false);
+    }
+  });
 
   const navLinks = [
     { name: "About me", href: "/interests" },
     { name: "Gallery", href: "/gallery" },
     { name: "Chatroom", href: "/chatroom" },
-    { name: "Personal Space", href: "/myspace" },
   ];
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+  }, [isOpen]);
+
   return (
-    // Preserved original header styling exactly
-    <header className="bg-main p-6 md:rounded-[20px] sticky md:static top-0 z-1000 text-lg uppercase">
-      <div className="flex justify-between items-center">
-        <Link href={"/"} className="uppercase">
-          <i>Tamar</i> <span className="font-semibold">Chirgadze</span>
-        </Link>
+    <>
+      <motion.header
+        className={`fixed top-0 left-0 right-0 z-200000 transition-all duration-300 ${
+          isScrolled || isOpen
+            ? "py-4 bg-white/70 backdrop-blur-md border-b border-white/20 shadow-sm"
+            : "py-6 bg-transparent"
+        }`}
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        {/* Subtle Gradient Line at the bottom when scrolled */}
+        {isScrolled && (
+            <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
+        )}
 
-        {/* Desktop Menu: Added 'hidden md:flex' to hide on mobile */}
-        <ul className="hidden md:flex gap-6 font-light select-none">
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href}>
-              <motion.li
-                whileHover={{ backgroundColor: "#F8AFA6", scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="px-2 py-1 rounded-md cursor-pointer bg-main"
-              >
-                {link.name}
-              </motion.li>
+        <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
+          
+          {/* Logo */}
+          <Link href={"/"} className="relative z-50 group">
+            <div className="uppercase font-gilroy text-lg tracking-wide text-black">
+              <span className="italic font-light group-hover:text-accent transition-colors duration-300">Tamar</span>{" "}
+              <span className="font-bold">Chirgadze</span>
+            </div>
+          </Link>
+
+          {/* Desktop Menu */}
+          <nav className="hidden md:flex gap-8 items-center">
+            {navLinks.map((link) => (
+              <Link key={link.href} href={link.href} className="relative group">
+                <span className="font-gilroy font-medium text-sm uppercase tracking-wider text-black/80 hover:text-black transition-colors">
+                  {link.name}
+                </span>
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent transition-all duration-300 group-hover:w-full" />
+              </Link>
+            ))}
+            
+            <Link href="/myspace">
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="px-5 py-2 rounded-full bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-accent transition-colors"
+                >
+                    Personal space
+                </motion.button>
             </Link>
-          ))}
-        </ul>
+          </nav>
 
-        {/* Mobile Hamburger: Only visible on mobile (md:hidden) */}
-        <div className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
-          <motion.div
-            animate={isOpen ? "open" : "closed"}
-            className="w-6 h-6 flex flex-col justify-center items-center gap-1.5 cursor-pointer"
-          >
-            <motion.span
-              variants={{
-                closed: { rotate: 0, y: 0 },
-                open: { rotate: 45, y: 8 },
-              }}
-              className="w-full h-0.5 bg-black block origin-center"
-            />
-            <motion.span
-              variants={{
-                closed: { opacity: 1 },
-                open: { opacity: 0 },
-              }}
-              className="w-full h-0.5 bg-black block"
-            />
-            <motion.span
-              variants={{
-                closed: { rotate: 0, y: 0 },
-                open: { rotate: -45, y: -8 },
-              }}
-              className="w-full h-0.5 bg-black block origin-center"
-            />
-          </motion.div>
+          <div className="md:hidden relative z-50">
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className="p-2 rounded-full hover:bg-black/5 transition-colors"
+            >
+                <motion.div
+                    animate={isOpen ? "open" : "closed"}
+                    className="w-6 h-6 flex flex-col justify-center gap-1.5"
+                >
+                    <motion.span 
+                        variants={{
+                            closed: { rotate: 0, y: 0 },
+                            open: { rotate: 45, y: 8, backgroundColor: "#000" }
+                        }}
+                        className="w-6 h-0.5 bg-black block origin-center transition-colors"
+                    />
+                    <motion.span 
+                        variants={{
+                            closed: { opacity: 1 },
+                            open: { opacity: 0 }
+                        }}
+                        className="w-6 h-0.5 bg-black block transition-colors"
+                    />
+                    <motion.span 
+                        variants={{
+                            closed: { rotate: 0, y: 0 },
+                            open: { rotate: -45, y: -8, backgroundColor: "#000" }
+                        }}
+                        className="w-6 h-0.5 bg-black block origin-center transition-colors"
+                    />
+                </motion.div>
+            </button>
+          </div>
         </div>
-      </div>
+      </motion.header>
 
-      {/* Mobile Menu Dropdown */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="md:hidden overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-199999 bg-background/95 backdrop-blur-xl md:hidden flex flex-col items-center justify-center "
           >
-            <ul className="flex flex-col items-center gap-4 pt-6 font-light select-none">
-              {navLinks.map((link) => (
-                <Link key={link.href} href={link.href} onClick={() => setIsOpen(false)}>
-                  <motion.li
-                    whileHover={{ backgroundColor: "#F8AFA6", scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="px-2 py-1 rounded-md cursor-pointer bg-main"
+            <div className="absolute top-1/4 right-0 w-64 h-64 bg-main rounded-full blur-[100px] opacity-50" />
+            <div className="absolute bottom-1/4 left-0 w-64 h-64 bg-accent rounded-full blur-[100px] opacity-30" />
+
+            <ul className="flex flex-col items-center gap-8 relative z-10">
+              {navLinks.map((link, i) => (
+                <motion.li
+                  key={link.href}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ delay: 0.1 + i * 0.1 }}
+                >
+                  <Link 
+                    href={link.href} 
+                    onClick={() => setIsOpen(false)}
+                    className="font-gilroy font-bold text-3xl text-black hover:text-accent transition-colors"
                   >
                     {link.name}
-                  </motion.li>
-                </Link>
+                  </Link>
+                </motion.li>
               ))}
+              <motion.li
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ delay: 0.1 + 3 * 0.1 }}
+                >
+                  <Link 
+                    href={"/myspace"} 
+                    onClick={() => setIsOpen(false)}
+                    className="font-gilroy font-bold text-3xl text-black hover:text-accent transition-colors"
+                  >
+                    Personal space
+                  </Link>
+                </motion.li>
             </ul>
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }
