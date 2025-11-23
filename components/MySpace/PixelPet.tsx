@@ -3,10 +3,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 
 // --- TYPES ---
-type PetState = 'idle' | 'sleeping' | 'dancing' | 'eating' | 'sad';
+type PetState = 'idle' | 'sleeping' | 'dancing' | 'eating' | 'sad' | 'refusing';
 type Heart = { id: number; x: number; y: number };
 type Particle = { id: number; x: number; y: number };
 type Snack = { id: number; icon: string; x: number; y: number; value: number };
+type Mess = { id: number; x: number; y: number };
 
 // Dialogue Types
 type DialogueOption = {
@@ -22,7 +23,7 @@ type Question = {
   options: DialogueOption[];
 };
 
-// --- DATA: Expanded Speech Variety ---
+// --- DATA ---
 const SNACKS = [
     { icon: "🍒", value: 10 }, 
     { icon: "🍰", value: 20 }, 
@@ -40,17 +41,7 @@ const IDLE_PHRASES = [
   "Hello Tamar! ✨", 
   "Nice cursor! 🖱️",
   "Tamar, you're doing great! 💖",
-  "What are we building today?",
-  "I love this song! 🎶",
-  "Don't forget to drink water! 💧",
-  "Tamar! Look at me! 👀",
-  "Your website is so cool...",
-  "Zzz... oh, hi Tamar!",
-  "Can I have a treat? 🍪",
-  "Is that a bug? Oh wait, it's a feature.",
-  "I like your style! 👗",
   "Pixels are the best. 👾",
-  "Do you need a break?",
 ];
 
 const QUESTIONS: Question[] = [
@@ -68,34 +59,6 @@ const QUESTIONS: Question[] = [
       { label: "It's okay.", reply: "Oh... okay.", reaction: 'idle' },
     ]
   },
-  {
-    text: "Should we listen to music?",
-    options: [
-      { label: "Yes! 🎵", reply: "Drop the beat, Tamar!!", reaction: 'dancing', triggerHearts: true, statBoost: true },
-      { label: "Silence pls", reply: "Shh... quiet mode.", reaction: 'sleeping' },
-    ]
-  },
-  {
-    text: "Working hard today?",
-    options: [
-      { label: "Yes, busy! 💻", reply: "You got this, Tamar! 💪", reaction: 'dancing', statBoost: true },
-      { label: "Nope, relaxing.", reply: "Let's chill then. 🌸", reaction: 'idle' },
-    ]
-  },
-  {
-    text: "Who is your favorite pet?",
-    options: [
-      { label: "You are! 💖", reply: "I knew it! Love you Tamar! 🥰", reaction: 'dancing', triggerHearts: true, statBoost: true },
-      { label: "My computer.", reply: "Rude... 😤", reaction: 'sad' },
-    ]
-  },
-  {
-    text: "Do you like this vibe?",
-    options: [
-      { label: "It's a vibe! ✨", reply: "Vibing with Tamar! ~", reaction: 'dancing', triggerHearts: true },
-      { label: "Not really.", reply: "Aw, maybe next song.", reaction: 'idle' },
-    ]
-  }
 ];
 
 // --- SUB-COMPONENT: Zzz Particle ---
@@ -116,8 +79,12 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
   const [state, setState] = useState<PetState>('idle');
   
   // VITALS (0 to 100)
+  // Hunger 0 = Full/Fat, 100 = Starving
   const [hunger, setHunger] = useState(20); 
   const [happiness, setHappiness] = useState(80); 
+  
+  // HYGIENE
+  const [messes, setMesses] = useState<Mess[]>([]);
 
   // SPEECH
   const [displayedText, setDisplayedText] = useState(""); 
@@ -145,69 +112,85 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
   const rubCounterRef = useRef(0);
   const lastRubTimeRef = useRef(0);
 
-  const [screenPos, setScreenPos] = useState({ x: 0, y: 0 });
+  const [screenPos, setScreenPos] = useState({ x: 50, y: 50 });
 
+  // --- DERIVED STATE ---
+  // If hunger is low (< 40), the pet is "stuffed" and uses fat sprites
+  const isFat = hunger < 40;
+
+  // --- 1. PERSISTENCE LAYER ---
+  useEffect(() => {
+      if (typeof window !== 'undefined') {
+          const savedData = localStorage.getItem('pixel_pet_data');
+          if (savedData) {
+              const parsed = JSON.parse(savedData);
+              const now = Date.now();
+              const lastSaved = parsed.lastSaved || now;
+              const hoursPassed = (now - lastSaved) / (1000 * 60 * 60);
+              
+              const hungerIncrease = Math.floor(hoursPassed * 10);
+              const happinessDecrease = Math.floor(hoursPassed * 5);
+
+              setHunger(Math.min(parsed.hunger + hungerIncrease, 100));
+              setHappiness(Math.max(parsed.happiness - happinessDecrease, 0));
+              setMesses(parsed.messes || []);
+              
+              if (hungerIncrease > 20) {
+                  setTimeout(() => speak("You were gone so long... I'm starving! 🥺"), 1000);
+              }
+          }
+          setIsMounted(true);
+          setScreenPos({ x: 50, y: window.innerHeight - 150 });
+      }
+  }, []);
 
   useEffect(() => {
-      if(isMounted && window) {
-          setScreenPos({ x: 50, y: window.innerHeight - 150 })
-      }
-  }, [isMounted]);
+      if (!isMounted) return;
+      const data = {
+          hunger,
+          happiness,
+          messes,
+          lastSaved: Date.now()
+      };
+      localStorage.setItem('pixel_pet_data', JSON.stringify(data));
+  }, [hunger, happiness, messes, isMounted]);
 
+
+  // --- WANDERING LOGIC ---
   useEffect(() => {
     if (!isMounted || state === 'sleeping') return;
 
     const wanderInterval = setInterval(() => {
-        // Don't wander if currently being dragged by user
         if (isDraggingRef.current) return; 
 
-        // Calculate safe bounds (padding of ~100px from edges)
         const maxX = window.innerWidth - 120;
         const maxY = window.innerHeight - 150;
         const minX = 20;
-        const minY = 50; // Keep below header menu
+        const minY = 50;
 
+        // Fat pets move less often or shorter distances? (Optional logic)
         const newX = minX + Math.random() * (maxX - minX);
         const newY = minY + Math.random() * (maxY - minY);
         
         setScreenPos({ x: newX, y: newY });
-    }, 7000);
+    }, 9000);
 
     return () => clearInterval(wanderInterval);
   }, [isMounted, state]);
   
 
-  useEffect(() => {
-    setIsMounted(true);
-    if (isMusicPlaying) {
-        setState('dancing');
-    }
-  }, [isMusicPlaying]);
-
-
-  useEffect(() => {
-    if (!isMounted) return;
-    const timer = setInterval(() => {
-        if (state === 'sleeping') return; 
-
-        setHunger(prev => Math.min(prev + 1, 100)); 
-        setHappiness(prev => Math.max(prev - 1, 0)); 
-
-        // Complain if needs are critical
-        if (hunger > 80 && Math.random() > 0.8 && !isBubbleVisible) speak("I'm so hungry... 🍩");
-        if (happiness < 20 && Math.random() > 0.8 && !isBubbleVisible) speak("Pay attention to me! 🥺");
-
-    }, 5000); 
-    return () => clearInterval(timer);
-  }, [state, hunger, happiness, isMounted, isBubbleVisible]);
-
-
+  // --- MUSIC & STATE LOGIC ---
   useEffect(() => {
     if (!isMounted) return;
     if (state === 'sleeping' || state === 'eating') return;
 
     if (isMusicPlaying) {
-        if (hunger > 90) {
+        if (messes.length > 0) {
+            if (state !== 'refusing') {
+                setState('refusing');
+                speak("It's too messy to dance! 🤢");
+            }
+        } else if (hunger > 90) {
             if (state !== 'sad') setState('sad');
             if (!isBubbleVisible) speak("Too hungry to dance...");
         } else if (happiness < 10) {
@@ -217,11 +200,33 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
             setState('dancing'); 
             spawnHearts(3);
         }
-    } else if (!isMusicPlaying && state === 'dancing') {
+    } else if (!isMusicPlaying && (state === 'dancing' || state === 'refusing')) {
         setState('idle');
     }
-  }, [isMusicPlaying, state, hunger, happiness, isBubbleVisible, isMounted]);
+  }, [isMusicPlaying, state, hunger, happiness, messes, isBubbleVisible, isMounted]);
 
+
+  // --- VITALS LOOP ---
+  useEffect(() => {
+    if (!isMounted) return;
+    const timer = setInterval(() => {
+        if (state === 'sleeping') return; 
+
+        setHunger(prev => Math.min(prev + 1, 100)); 
+        
+        const decayRate = messes.length > 0 ? 3 : 1;
+        setHappiness(prev => Math.max(prev - decayRate, 0)); 
+
+        if (messes.length > 0 && Math.random() > 0.7 && !isBubbleVisible) speak("Eww... clean up please? 💩");
+        else if (hunger > 80 && Math.random() > 0.8 && !isBubbleVisible) speak("I'm so hungry... 🍩");
+        else if (happiness < 20 && Math.random() > 0.8 && !isBubbleVisible) speak("Pay attention to me! 🥺");
+
+    }, 5000); 
+    return () => clearInterval(timer);
+  }, [state, hunger, happiness, messes, isMounted, isBubbleVisible]);
+
+
+  // --- SPEECH ---
   useEffect(() => {
     if (displayedText.length < fullText.length) {
       setIsTyping(true);
@@ -247,16 +252,15 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     setIsBubbleVisible(true);
   }, []);
 
+
+  // --- INTERACTION ---
   const handleAnswer = (option: DialogueOption) => {
       speak(option.reply, null); 
-      
       if (option.triggerHearts) spawnHearts(5);
       if (option.statBoost) setHappiness(prev => Math.min(prev + 20, 100)); 
-
       if (option.reaction) {
           setState(option.reaction);
           setTimeout(() => {
-            // Return to previous state logic
             if (isMusicPlaying && option.reaction !== 'dancing') setState('dancing');
             else if (!isMusicPlaying && option.reaction !== 'idle') setState('idle');
           }, 2000);
@@ -265,6 +269,17 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
 
   const spawnSnack = (snackData: { icon: string, value: number }) => {
     setSnacks(prev => [...prev, { ...snackData, id: Date.now(), x: window.innerWidth/2, y: window.innerHeight/2 }]);
+  };
+
+  const cleanMesses = () => {
+      if (messes.length === 0) {
+          speak("It's already clean! ✨");
+          return;
+      }
+      setMesses([]);
+      spawnHearts(5);
+      setHappiness(prev => Math.min(prev + 10, 100));
+      speak("Much better! Thank you! 🌸");
   };
 
   const handleSnackDrop = (snackId: number, info: PanInfo, value: number) => {
@@ -280,24 +295,32 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
         setHunger(prev => Math.max(prev - value, 0)); 
         setHappiness(prev => Math.min(prev + 5, 100)); 
 
+        if (Math.random() > 0.7) {
+            setTimeout(() => {
+                const newMess = { 
+                    id: Date.now(), 
+                    x: screenPos.x + (Math.random() * 100 - 50), 
+                    y: screenPos.y + (Math.random() * 50) 
+                };
+                setMesses(prev => [...prev, newMess]);
+                speak("Oops... 😳");
+            }, 2000);
+        }
+
         setState('eating');
         setTimeout(() => setState(prev => prev === 'eating' ? (isMusicPlaying ? 'dancing' : 'idle') : prev), 1500);
     }
   };
 
-  
   const handleInteract = () => {
     if (state === 'eating') return;
-    
     spawnHearts(5); 
     setHappiness(prev => Math.min(prev + 5, 100));
 
     if (state === 'sleeping') {
-      // Wake up -> Check Music
       setState(isMusicPlaying ? 'dancing' : 'idle');
       speak("Good morning! ☀️");
     } else {
-      // Go to sleep
       setState('sleeping');
       speak("Goodnight... 💤");
     }
@@ -305,12 +328,10 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
 
   const handleMouseMoveOverPet = () => {
     if (state === 'sleeping') return;
-    
     const now = Date.now();
     if (now - lastRubTimeRef.current > 200) {
       rubCounterRef.current = 0;
     }
-    
     rubCounterRef.current += 1;
     lastRubTimeRef.current = now;
 
@@ -342,13 +363,13 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
   };
   
 
+  // --- LOOPS & PARTICLES ---
   useEffect(() => {
     if (!isMounted) return;
     const interval = setInterval(() => {
         if (isBubbleVisible || state === 'sleeping') return;
-        
         const roll = Math.random();
-        if (roll > 0.8) { // Increased frequency slightly
+        if (roll > 0.8) { 
              const randomQ = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
              speak(randomQ.text, randomQ);
         } else if (roll > 0.5) {
@@ -371,26 +392,48 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
         setSleepParticles(prev => prev.filter(p => p.id !== newPart.id));
       }, 2000);
     }, 800);
-
     return () => clearInterval(interval);
   }, [state]);
 
 
-  const spriteConfig = {
-    idle: { row: 0, steps: 3, speed: 0.8 },
-    dancing: { row: 1, steps: 3, speed: 0.5 },
-    sleeping: { row: 2, steps: 3, speed: 1.5 },
-    eating: { row: 1, steps: 3, speed: 0.2 },
-    sad: { row: 0, steps: 1, speed: 1 },
-  };
-  const currentAnim = spriteConfig[state];
-  const yPosition = `${currentAnim.row * 50}%`;
+  // --- ANIMATION LOGIC (UPDATED FOR 6x3 GRID) ---
+  // Grid: 6 columns, 3 rows.
+  // Row 0: Idle (3 frames) + Fat Idle (3 frames)
+  // Row 1: Eating (3 frames) + Fat Eating (3 frames)
+  // Row 2: Sleeping (3 frames) + Sad (3 frames)
+  
+  let animationName = 'playIdle';
+  let bgY = '0%'; // Row 0 by default
+
+  if (state === 'eating') {
+      bgY = '50%'; // Row 1
+      animationName = isFat ? 'playFatEat' : 'playEat';
+  } else if (state === 'sleeping') {
+      bgY = '100%'; // Row 2
+      animationName = 'playSleep';
+  } else if (state === 'sad' || state === 'refusing') {
+      bgY = '100%'; // Row 2
+      animationName = 'playSad';
+  } else if (state === 'dancing') {
+       bgY = '0%'; // Row 0
+       animationName = isFat ? 'playFatIdle' : 'playIdle';
+  } else {
+      // IDLE
+      bgY = '0%';
+      animationName = isFat ? 'playFatIdle' : 'playIdle';
+  }
+
+  // Override for Sadness check (if very unhappy but not strictly in 'sad' state yet)
+  if (state === 'idle' && happiness < 30) {
+      bgY = '100%';
+      animationName = 'playSad';
+  }
 
   if (!isMounted) return null; 
 
   return (
     <>
-      {/* MENU with STATS */}
+      {/* MENU */}
       <div className="fixed top-24 right-4 flex flex-col items-end gap-2 z-[60]">
          <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-[10px] uppercase font-bold text-pink-500 bg-white/90 rounded-lg py-2 px-3 shadow border-2 border-pink-100 hover:scale-105 active:scale-95 transition">
             {isMenuOpen ? "Close ✖" : "Menu 🍒"}
@@ -419,9 +462,9 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
                             ></div>
                         </div>
                     </div>
+                    {isFat && <div className="text-[10px] text-center text-orange-500 font-bold bg-orange-100 rounded px-1">I'm Stuffed! 🐡</div>}
                     
                     <hr className="border-pink-100" />
-
                     <div className="flex flex-wrap gap-2 justify-center">
                         {SNACKS.map((snack, i) => (
                             <motion.button key={snack.icon} initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }} onClick={() => spawnSnack(snack)} className="w-8 h-8 bg-white shadow rounded-full text-lg hover:scale-110">
@@ -429,13 +472,25 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
                             </motion.button>
                         ))}
                     </div>
+                    {messes.length > 0 && (
+                        <motion.button initial={{ scale: 0 }} animate={{ scale: 1 }} onClick={cleanMesses} className="w-full bg-blue-100 text-blue-600 text-[10px] font-bold py-2 rounded-lg hover:bg-blue-200 transition-colors">
+                            Clean Room 🧹
+                        </motion.button>
+                    )}
                 </motion.div>
             )}
          </AnimatePresence>
       </div>
 
       <div ref={constraintsRef} className="fixed top-0 bottom-0 left-0 right-0 w-full h-full inset-0 pointer-events-none z-50 overflow-hidden">
-        {/* SNACKS IN WORLD */}
+        {/* MESSES */}
+        <AnimatePresence>
+            {messes.map(mess => (
+                <motion.div key={mess.id} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0, opacity: 0 }} className="absolute text-2xl z-[45]" style={{ left: mess.x, top: mess.y }}>💩</motion.div>
+            ))}
+        </AnimatePresence>
+
+        {/* SNACKS */}
         <AnimatePresence>
             {snacks.map(snack => (
                 <motion.div key={snack.id} drag dragConstraints={constraintsRef} whileDrag={{ scale: 1.3 }} initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} onDragEnd={(e, info) => handleSnackDrop(snack.id, info, snack.value)} className="top-[50%] left-[50%] absolute pointer-events-auto text-4xl z-[55] cursor-grab">{snack.icon}</motion.div>
@@ -455,57 +510,22 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
           }}
           onMouseMove={handleMouseMoveOverPet}
           animate={{ x: screenPos.x, y: screenPos.y }}
-          transition={{
-            type: "spring",
-            mass: 3,      // Heavier feel
-            stiffness: 30, // Loose spring
-            damping: 20,   // Slow down gradually
-            restDelta: 0.001 // Wait until fully stopped before next move
-          }}
+          transition={{ type: "spring", mass: 3, stiffness: 30, damping: 20 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          // REMOVED fixed positions like 'bottom-4 left-18'. Added 'top-0 left-0' as base.
-          className="absolute top-0 left-0 w-24 h-24 pointer-events-auto cursor-grab active:cursor-grabbing z-50"
+          className="absolute top-0 left-0 w-32 h-32 pointer-events-auto cursor-grab active:cursor-grabbing z-50"
         >
-           {/* ... content inside (particles, bubbles, sprite) remains unchanged ... */}
-           {/* Sleep Particles */}
-           <AnimatePresence>
-            {sleepParticles.map(p => (
-                <ZzzParticle key={p.id} x={p.x} y={p.y} />
-            ))}
-          </AnimatePresence>
-
-          {/* Hearts Overlay */}
+           <AnimatePresence>{sleepParticles.map(p => <ZzzParticle key={p.id} x={p.x} y={p.y} />)}</AnimatePresence>
           <div className="absolute inset-0 pointer-events-none flex justify-center items-center z-40">
-            <AnimatePresence>
-                {hearts.map(h => (
-                    <motion.div key={h.id} initial={{ opacity: 1, scale: 0.5 }} animate={{ opacity: 0, scale: 1.5, y: -50 }} exit={{ opacity: 0 }} className="absolute text-xl">💖</motion.div>
-                ))}
-            </AnimatePresence>
+            <AnimatePresence>{hearts.map(h => <motion.div key={h.id} initial={{ opacity: 1, scale: 0.5 }} animate={{ opacity: 0, scale: 1.5, y: -50 }} exit={{ opacity: 0 }} className="absolute text-xl">💖</motion.div>)}</AnimatePresence>
           </div>
 
-          {/* Speech Bubble */}
           <AnimatePresence>
             {isBubbleVisible && (
-                <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.8 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 5, scale: 0.8 }}
-                    onClick={(e) => e.stopPropagation()}
-                    className={`absolute ${activeQuestion && !isTyping ? "-top-25" : "-top-10"} bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-bold p-3 rounded-2xl shadow-xl border-2 border-pink-200 min-w-[120px] max-w-[200px] z-50 cursor-default`}
-                    style={{ transformOrigin: "bottom right" }}
-                >
-                    <div className="mb-2 whitespace-pre-wrap leading-tight text-center">
-                        {displayedText}
-                        {isTyping && <span className="animate-pulse text-pink-500">|</span>}
-                    </div>
-
+                <motion.div initial={{ opacity: 0, y: 10, scale: 0.8 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 5, scale: 0.8 }} onClick={(e) => e.stopPropagation()} className={`absolute ${activeQuestion && !isTyping ? "-top-25" : "-top-10"} bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-bold p-3 rounded-2xl shadow-xl border-2 border-pink-200 min-w-[120px] max-w-[200px] z-50 cursor-default`} style={{ transformOrigin: "bottom right" }}>
+                    <div className="mb-2 whitespace-pre-wrap leading-tight text-center">{displayedText}{isTyping && <span className="animate-pulse text-pink-500">|</span>}</div>
                     {activeQuestion && !isTyping && (
-                        <div className="flex flex-col gap-1 mt-2">
-                             {activeQuestion.options.map((opt, idx) => (
-                                 <button key={idx} onClick={(e) => { e.stopPropagation(); handleAnswer(opt); }} className="bg-pink-50 hover:bg-pink-100 text-pink-600 border border-pink-200 rounded px-2 py-1 text-[10px] transition-colors text-center">{opt.label}</button>
-                             ))}
-                        </div>
+                        <div className="flex flex-col gap-1 mt-2">{activeQuestion.options.map((opt, idx) => (<button key={idx} onClick={(e) => { e.stopPropagation(); handleAnswer(opt); }} className="bg-pink-50 hover:bg-pink-100 text-pink-600 border border-pink-200 rounded px-2 py-1 text-[10px] transition-colors text-center">{opt.label}</button>))}</div>
                     )}
                     <div className="absolute -bottom-2 right-6 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-pink-200"></div>
                 </motion.div>
@@ -514,20 +534,73 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
 
           {/* Sprite Animation */}
           <motion.div
-            animate={state === 'dancing' ? { y: [0, -8, 0] } : { y: 0 }}
+            animate={state === 'dancing' ? { y: [0, -10, 0] } : { y: 0 }}
             transition={state === 'dancing' ? { repeat: Infinity, duration: 0.4 } : {}}
             className="w-full h-full touch-none"
-            onClick={(e) => {
-                e.stopPropagation();
-                if (isDraggingRef.current) return;
-                handleInteract();
-            }}
+            onClick={(e) => { e.stopPropagation(); if (isDraggingRef.current) return; handleInteract(); }}
           >
-             <div key={state} className="w-full h-full" style={{ backgroundImage: "url('/sprite/pet.png')", backgroundRepeat: 'no-repeat', backgroundSize: '400% 300%', backgroundPositionY: yPosition, imageRendering: 'pixelated', transform: isFacingRight ? 'scaleX(1)' : 'scaleX(-1)', animation: `playRow ${currentAnim.speed}s steps(${currentAnim.steps}) infinite alternate` }} />
+             <div 
+                className="w-full h-full" 
+                style={{ 
+                    backgroundImage: "url('/sprite/pet3.png')",
+                    backgroundRepeat: 'no-repeat', 
+                    backgroundSize: '600% 300%', // 6 Columns, 3 Rows
+                    backgroundPositionY: bgY, 
+                    imageRendering: 'pixelated', 
+                    transform: isFacingRight ? 'scaleX(1)' : 'scaleX(-1)', 
+                    animation: `${animationName} 1s steps(1) infinite` 
+                }} 
+             />
           </motion.div>
         </motion.div>
       </div>
-      <style jsx global>{` @keyframes playRow { from { background-position-x: 0%; } to { background-position-x: 100%; } } `}</style>
+
+      <style jsx global>{`
+        /* ROW 0: Idle (Frames 0, 1, 2) */
+        @keyframes playIdle {
+            0% { background-position-x: 0%; }
+            33% { background-position-x: 20%; }
+            66% { background-position-x: 40%; }
+            100% { background-position-x: 0%; }
+        }
+        /* ROW 0: Fat Idle (Frames 3, 4, 5) */
+        @keyframes playFatIdle {
+            0% { background-position-x: 60%; }
+            33% { background-position-x: 80%; }
+            66% { background-position-x: 100%; }
+            100% { background-position-x: 60%; }
+        }
+
+        /* ROW 1: Eat (Frames 0, 1, 2) */
+        @keyframes playEat {
+            0% { background-position-x: 0%; }
+            33% { background-position-x: 20%; }
+            66% { background-position-x: 40%; }
+            100% { background-position-x: 0%; }
+        }
+        /* ROW 1: Fat Eat (Frames 3, 4, 5) */
+        @keyframes playFatEat {
+            0% { background-position-x: 60%; }
+            33% { background-position-x: 80%; }
+            66% { background-position-x: 100%; }
+            100% { background-position-x: 60%; }
+        }
+
+        /* ROW 2: Sleep (Frames 0, 1, 2) */
+        @keyframes playSleep {
+            0% { background-position-x: 0%; }
+            33% { background-position-x: 20%; }
+            66% { background-position-x: 40%; }
+            100% { background-position-x: 0%; }
+        }
+        /* ROW 2: Sad (Frames 3, 4, 5) */
+        @keyframes playSad {
+            0% { background-position-x: 60%; }
+            33% { background-position-x: 80%; }
+            66% { background-position-x: 100%; }
+            100% { background-position-x: 60%; }
+        }
+      `}</style>
     </>
   );
 }
