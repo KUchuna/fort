@@ -92,15 +92,15 @@ export default function LiveChat() {
                 {/* Modal Content */}
                 <motion.div 
                     initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white w-full max-w-xs p-6 rounded-3xl shadow-2xl relative z-10 border border-accent"
+                    className="bg-white w-full max-w-xs p-6 rounded-3xl shadow-2xl relative z-10 border border-[var(--color-accent)]"
                 >
                     <button onClick={() => setShowNameModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
                         <X size={18} />
                     </button>
 
                     <div className="flex flex-col items-center mb-4">
-                        <div className="w-12 h-12 bg-background rounded-full flex items-center justify-center mb-2">
-                            <Sparkles size={20} className="text-accent" />
+                        <div className="w-12 h-12 bg-[var(--color-background)] rounded-full flex items-center justify-center mb-2">
+                            <Sparkles size={20} className="text-[var(--color-accent)]" />
                         </div>
                         <h3 className="font-bold text-lg text-black">Who are you?</h3>
                         <p className="text-xs text-gray-400">Pick a cute nickname</p>
@@ -112,10 +112,10 @@ export default function LiveChat() {
                             value={tempNickname}
                             onChange={(e) => setTempNickname(e.target.value)}
                             placeholder="e.g. Princess Peach"
-                            className="w-full bg-backgroundtransparent focus:border-accent4 py-2 text-center text-sm outline-none transition-all"
+                            className="w-full bg-[var(--color-background)] border border-transparent focus:border-[var(--color-accent)] rounded-xl px-4 py-2 text-center text-sm outline-none transition-all"
                             autoFocus
                         />
-                        <button type="submit" className="w-full bg-accentt-bold py-2 rounded-xl hover:brightness-110 transition-all text-sm shadow-md shadow-(--color-accent)/30">
+                        <button type="submit" className="w-full bg-[var(--color-accent)] text-white font-bold py-2 rounded-xl hover:brightness-110 transition-all text-sm shadow-md shadow-[var(--color-accent)]/30">
                             Save Name
                         </button>
                     </form>
@@ -124,10 +124,10 @@ export default function LiveChat() {
         )}
       </AnimatePresence>
 
-      <div className="relative border border-accent rounded-3xl overflow-hidden bg-background shadow-xl shadow-(--color-accent)/20 h-[500px] flex flex-col">
+      <div className="relative border border-[var(--color-accent)] rounded-3xl overflow-hidden bg-[var(--color-background)] shadow-xl shadow-[var(--color-accent)]/20 h-[500px] flex flex-col">
         
         {/* --- Header --- */}
-        <div className="bg-main p-4 border-b border-accent/30 flex items-center justify-between">
+        <div className="bg-[var(--color-main)] p-4 border-b border-[var(--color-accent)]/30 flex items-center justify-between">
            <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-green-400 animate-pulse" />
               <span className="text-black font-bold tracking-wide">Live Chat</span>
@@ -138,8 +138,8 @@ export default function LiveChat() {
              onClick={() => setShowNameModal(true)}
              className="flex items-center gap-1.5 bg-white/40 hover:bg-white/60 px-3 py-1.5 rounded-full transition-all"
            >
-              <User size={14} className="text-accent" />
-              <span className="text-[10px] font-bold text-accentking-wider">
+              <User size={14} className="text-[var(--color-accent)]" />
+              <span className="text-[10px] font-bold text-[var(--color-accent)] uppercase tracking-wider">
                 Set Name
               </span>
            </button>
@@ -155,10 +155,10 @@ export default function LiveChat() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 className="flex flex-col items-start"
               >
-                <span className="text-[10px] font-bold text-accent ml-1 mb-1 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-[var(--color-accent)] ml-1 mb-1 uppercase tracking-wider">
                   {msg.username}
                 </span>
-                <div className="bg-white border border-mainunded-2xl rounded-tl-none text-sm text-black shadow-sm max-w-[85%] wrap-break-word whiwrap-break-word-wrap">
+                <div className="bg-white border border-[var(--color-main)] px-4 py-2.5 rounded-2xl rounded-tl-none text-sm text-black shadow-sm max-w-[85%] break-words whitespace-pre-wrap">
                   {msg.text}
                 </div>
               </motion.div>
@@ -168,7 +168,7 @@ export default function LiveChat() {
         </div>
 
         {/* --- Input Area --- */}
-        <div className="bg-white/60 backdrop-blur-md border-t border-main p-3 relative">
+        <div className="bg-white/60 backdrop-blur-md border-t border-[var(--color-main)] p-3 relative">
           
           <AnimatePresence>
             {showEmoji && (
@@ -193,7 +193,7 @@ export default function LiveChat() {
             <button 
                 type="button"
                 onClick={() => setShowEmoji(!showEmoji)}
-                className="p-2.5 rounded-full hover:bg-mainlor-accent)] transition-colors"
+                className="p-2.5 rounded-full hover:bg-[var(--color-main)] text-[var(--color-accent)] transition-colors"
             >
                 <Smile size={22} />
             </button>
@@ -203,7 +203,7 @@ export default function LiveChat() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               disabled={isSending}
-              className="flex-1 bg-background rounded-2xl px-4 py-3 text-sm text-black placeholder:text-black/30 outline-none border border-transparent focus:border-accent transition-all disabled:opacity-50"
+              className="flex-1 bg-[var(--color-background)] rounded-2xl px-4 py-3 text-sm text-black placeholder:text-black/30 outline-none border border-transparent focus:border-[var(--color-accent)] transition-all disabled:opacity-50"
               placeholder={isSending ? "Sending..." : "Type something..."}
               autoComplete="off"
             />
@@ -211,7 +211,7 @@ export default function LiveChat() {
             <button 
                 type="submit" 
                 disabled={!inputText.trim() || isSending}
-                className="bg-accent hover:brightness-110 text-white p-3 rounded-full shadow-md shadow-(--color-accent)/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-12 h-12"
+                className="bg-[var(--color-accent)] hover:brightness-110 text-white p-3 rounded-full shadow-md shadow-[var(--color-accent)]/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-12 h-12"
             >
               {isSending ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} className="ml-0.5" />}
             </button>
