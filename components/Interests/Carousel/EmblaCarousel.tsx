@@ -84,14 +84,14 @@ const EmblaCarousel: React.FC<PropType> = (props) => {
 
             <motion.div
               layoutId={`card-container-${selectedId}`}
-              className="relative w-full h-max max-w-[90%] md:max-w-[45%] bg-black rounded-2xl overflow-hidden shadow-2xl flex flex-col pointer-events-auto my-auto"
+              className="relative mt-20 w-full h-max max-w-[90%] md:max-w-[45%] bg-black rounded-2xl overflow-hidden shadow-2xl flex flex-col pointer-events-auto"
               transition={{
                 layout: { type: "spring", stiffness: 300, damping: 40 },
               }}
             >
               <motion.div
                 layoutId={`card-image-container-${selectedId}`}
-                className="w-full relative shrink-0 overflow-hidden"
+                className="w-full md:max-h-[60vh] max-h-[50svh] shrink-0 overflow-hidden"
                 transition={{
                   layout: { type: "spring", stiffness: 300, damping: 30 },
                 }}

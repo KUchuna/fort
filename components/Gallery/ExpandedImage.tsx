@@ -74,7 +74,7 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
   };
 
   return (
-    <div className="fixed inset-0 z-50000 flex items-center justify-center px-2 md:px-4">
+    <div className="fixed inset-0 z-500000 flex items-center justify-center px-2 md:px-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

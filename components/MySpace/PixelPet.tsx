@@ -38,7 +38,7 @@ interface PetMenuProps {
 // --- CONSTANTS ---
 const SPRITE_SHEET = '/sprite/pet4.png'; 
 const MOVEMENT_INTERVAL = 8000;
-const VITALS_INTERVAL = 5000;
+const VITALS_INTERVAL = 3000;
 const SAVE_DELAY = 2000;
 const SNACKS: SnackItem[] = [
   { icon: "🍒", value: 10 }, 
@@ -128,7 +128,7 @@ const Bubble = ({ text, question, isTyping, onAnswer }: { text: string, question
     animate={{ opacity: 1, y: 0, scale: 1 }} 
     exit={{ opacity: 0, y: 5, scale: 0.8 }} 
     onClick={(e) => e.stopPropagation()} 
-    className={`absolute ${question && !isTyping ? "-top-32" : "-top-20"} right-0 bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-bold p-3 rounded-2xl shadow-xl border-2 border-pink-200 min-w-[140px] max-w-[200px] z-[60] cursor-default pointer-events-auto`} 
+    className={`absolute ${question && !isTyping ? "-top-28" : "-top-16"} right-0 bg-white/95 backdrop-blur-sm text-gray-800 text-xs font-bold p-3 rounded-2xl shadow-xl border-2 border-pink-200 min-w-[140px] max-w-[200px] z-[60] cursor-default pointer-events-auto`} 
     style={{ transformOrigin: "bottom right" }}
   >
     <div className="mb-2 whitespace-pre-wrap leading-tight text-center">
@@ -143,7 +143,7 @@ const Bubble = ({ text, question, isTyping, onAnswer }: { text: string, question
         ))}
       </div>
     )}
-    <div className="absolute -bottom-2 right-6 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-pink-200"></div>
+    <div className="absolute -bottom-2 right-4 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-pink-200"></div>
   </motion.div>
 );
 
@@ -301,9 +301,12 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
             if (messes.length > 0 && Math.random() > 0.7) speak("Eww... clean up please? 💩");
             else if (hunger > 80 && Math.random() > 0.8) speak("I'm so hungry... 🍩");
             else if (happiness < 20 && Math.random() > 0.8) speak("Pay attention to me! 🥺");
-            else if (Math.random() > 0.9) {
+            else if (Math.random() > 0.5) {
                  const roll = Math.random();
-                 if (roll > 0.7) speak(QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)].text, QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)]);
+                 if (roll > 0.5) {
+                     const randomQuestion = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)];
+                     speak(randomQuestion.text, randomQuestion);
+                 }
                  else speak(IDLE_PHRASES[Math.floor(Math.random() * IDLE_PHRASES.length)]);
             }
         }
@@ -453,20 +456,6 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [state, isBubbleVisible, speak, spawnHearts, isMounted]);
 
-  // Window Resize Safety
-  useEffect(() => {
-      const handleResize = () => {
-          const maxX = window.innerWidth - 100;
-          const maxY = window.innerHeight - 100;
-          setScreenPos(prev => ({
-              x: Math.min(prev.x, maxX),
-              y: Math.min(prev.y, maxY)
-          }));
-      };
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   // Sprite Calculation
   const getSpriteInfo = () => {
       let row = 0;
@@ -526,12 +515,9 @@ export default function PixelPet({ isMusicPlaying }: { isMusicPlaying: boolean }
           dragMomentum={false}
           onDragStart={() => { isDraggingRef.current = true; }}
           onDragEnd={(e, info) => {
-             // Small delay to prevent "click" after drag
              setTimeout(() => { isDraggingRef.current = false; }, 150);
-             // Sync state with Framer Motion's internal position
              setScreenPos({ x: info.point.x - 40, y: info.point.y - 40 }); 
           }}
-          // We remove onMouseMove here and handle it globally in useEffect for better rub detection
           animate={{ x: screenPos.x, y: screenPos.y }}
           transition={{ type: "spring", mass: 3, stiffness: 30, damping: 20 }}
           whileHover={{ scale: 1.05 }}
