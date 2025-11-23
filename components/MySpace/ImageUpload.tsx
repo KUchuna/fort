@@ -76,14 +76,14 @@ const handleUploadConfirm = async (e: React.FormEvent) => {
             animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="fixed bottom-6 right-6 z-[100] flex items-center gap-3 bg-white/90 backdrop-blur-md border border-white/50 shadow-2xl shadow-pink-500/20 p-4 rounded-2xl min-w-[320px]"
+            className="fixed bottom-6 right-6 z-100 flex items-center gap-3 bg-white/90 backdrop-blur-md border border-white/50 shadow-2xl shadow-pink-500/20 p-4 rounded-2xl min-w-[320px]"
           >
             {toastStatus === 'success' ? (
-              <div className="bg-gradient-to-tr from-emerald-400 to-teal-500 rounded-full p-2 text-white shadow-lg shadow-emerald-500/30">
+              <div className="bg-linear-to-tr from-emerald-400 to-teal-500 rounded-full p-2 text-white shadow-lg shadow-emerald-500/30">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
             ) : (
-              <div className="bg-gradient-to-tr from-rose-500 to-red-600 rounded-full p-2 text-white shadow-lg shadow-rose-500/30">
+              <div className="bg-linear-to-tr from-rose-500 to-red-600 rounded-full p-2 text-white shadow-lg shadow-rose-500/30">
                 <AlertCircle className="w-5 h-5" />
               </div>
             )}
@@ -130,7 +130,7 @@ const handleUploadConfirm = async (e: React.FormEvent) => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-white shadow-lg shadow-pink-500/30 transition-all duration-300 bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600"
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl font-semibold text-white shadow-lg shadow-pink-500/30 transition-all duration-300 bg-linear-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600"
             >
               <ImageIcon className="w-5 h-5" />
               <span>Add Memory</span>

@@ -85,7 +85,7 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
 
       <motion.div
         layoutId={`card-${image.id}`}
-        className="relative w-full max-w-5xl h-[82vh] md:h-[85vh] bg-[var(--color-background)] rounded-xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row z-10"
+        className="relative w-full max-w-5xl h-[82vh] md:h-[85vh] bg-background rounded-xl md:rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row z-10"
       >
         <button
           onClick={onClose}
@@ -104,7 +104,7 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
           />
 
           {image.title && (
-            <div className="absolute top-0 left-0 right-0 p-6 bg-gradient-to-b from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden md:block">
+            <div className="absolute top-0 left-0 right-0 p-6 bg-linear-to-b from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none hidden md:block">
               <h3 className="text-white font-[Gilroy] text-xl font-bold tracking-wide">
                 {image.title}
               </h3>
@@ -113,14 +113,14 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
         </div>
 
         {/* Sidebar: 65% height on mobile, full height on desktop */}
-        <div className="w-full md:w-1/3 h-[65%] md:h-full flex flex-col bg-[var(--color-background)] border-l border-[var(--color-main)]">
+        <div className="w-full md:w-1/3 h-[65%] md:h-full flex flex-col bg-background border-l border-main">
           
           {/* Details Header */}
-          <div className="p-3 md:p-6 border-b border-[var(--color-main)] shrink-0">
+          <div className="p-3 md:p-6 border-b border-main shrink-0">
             <h2 className="font-[Gilroy] text-xs md:text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Details</h2>
             
             {image.title && (
-                <h1 className="font-[Gilroy] text-lg md:text-2xl font-bold text-[var(--color-accent)] mb-1 md:mb-2 leading-tight break-words hyphens-auto">
+                <h1 className="font-[Gilroy] text-lg md:text-2xl font-bold text-accent mb-1 md:mb-2 leading-tight wrap-break-word hyphens-auto">
                     {image.title}
                 </h1>
             )}
@@ -133,7 +133,7 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
           {/* Comments List */}
           <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 md:space-y-4 min-h-0">
             {loading ? (
-              <p className="text-center text-[var(--color-accent)]">Loading comments...</p>
+              <p className="text-center text-accent">Loading comments...</p>
             ) : comments.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-gray-400">
                 <MessageCircle className="w-8 h-8 md:w-10 md:h-10 mb-2 opacity-20" />
@@ -145,14 +145,14 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   key={comment.id}
-                  className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-[var(--color-main)]"
+                  className="bg-white p-3 md:p-4 rounded-xl shadow-sm border border-main"
                 >
                   <div className="flex justify-between items-start gap-2">
                     <div className="min-w-0 flex-1">
-                      <span className="font-bold text-[var(--color-accent)] text-xs md:text-sm block">
+                      <span className="font-bold text-accent text-xs md:text-sm block">
                         {comment.user_name}
                       </span>
-                      <p className="text-gray-800 mt-0.5 md:mt-1 text-xs md:text-sm leading-relaxed break-words whitespace-pre-wrap">
+                      <p className="text-gray-800 mt-0.5 md:mt-1 text-xs md:text-sm leading-relaxed wrap-break-word whitespace-pre-wrap">
                         {comment.content}
                       </p>
                     </div>
@@ -172,7 +172,7 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
           </div>
 
           {/* Form Area */}
-          <div className="p-3 md:p-6 py-2 md:py-6 bg-white border-t border-[var(--color-main)] shrink-0">
+          <div className="p-3 md:p-6 py-2 md:py-6 bg-white border-t border-main shrink-0">
             <form onSubmit={handlePostComment} className="flex flex-col gap-2 md:gap-3">
               <div className="flex gap-2 items-center">
                 <span className="self-center text-xs md:text-sm text-gray-500">Name:</span>
@@ -181,7 +181,7 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
                   placeholder="Nickname"
                   value={nickname}
                   onChange={(e) => setNickname(e.target.value)}
-                  className="flex-1 md:w-1/3 p-2 text-xs md:text-sm bg-[var(--color-background)] rounded-lg border border-[var(--color-main)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+                  className="flex-1 md:w-1/3 p-2 text-xs md:text-sm bg-background rounded-lg border border-main focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
               <div className="relative">
@@ -217,12 +217,12 @@ export default function ExpandedImage({ image, isAdmin, onClose }: ExpandedImage
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
                   placeholder="Write a comment..."
-                  className="w-full p-3 pr-10 text-sm bg-[var(--color-background)] rounded-xl border border-[var(--color-main)] focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)] resize-none h-16 md:h-20"
+                  className="w-full p-3 pr-10 text-sm bg-background rounded-xl border border-main focus:outline-none focus:ring-1 focus:ring-accent resize-none h-16 md:h-20"
                 />
                 <button
                   type="submit"
                   disabled={isSubmitting || !commentText.trim()}
-                  className="absolute bottom-3 right-3 p-1.5 md:p-2 bg-[var(--color-accent)] text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  className="absolute bottom-3 right-3 p-1.5 md:p-2 bg-accent text-white rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
                 >
                   <Send className="w-3.5 h-3.5 md:w-4 md:h-4" />
                 </button>

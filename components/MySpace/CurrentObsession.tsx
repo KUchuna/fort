@@ -65,14 +65,14 @@ export default function CurrentObsession() {
             animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="fixed bottom-6 right-6 z-[100] flex items-center gap-3 bg-white/90 backdrop-blur-md border border-white/50 shadow-2xl shadow-pink-500/20 p-4 rounded-2xl min-w-[320px]"
+            className="fixed bottom-6 right-6 z-100 flex items-center gap-3 bg-white/90 backdrop-blur-md border border-white/50 shadow-2xl shadow-pink-500/20 p-4 rounded-2xl min-w-[320px]"
           >
             {toastStatus === 'success' ? (
-              <div className="bg-gradient-to-tr from-emerald-400 to-teal-500 rounded-full p-2 text-white shadow-lg shadow-emerald-500/30">
+              <div className="bg-linear-to-tr from-emerald-400 to-teal-500 rounded-full p-2 text-white shadow-lg shadow-emerald-500/30">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
             ) : (
-              <div className="bg-gradient-to-tr from-rose-500 to-red-600 rounded-full p-2 text-white shadow-lg shadow-rose-500/30">
+              <div className="bg-linear-to-trrom-rose-500 to-red-600 rounded-full p-2 text-white shadow-lg shadow-rose-500/30">
                 <AlertCircle className="w-5 h-5" />
               </div>
             )}
@@ -100,7 +100,7 @@ export default function CurrentObsession() {
 
       <section className="w-full max-w-lg">
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-rose-400 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
+          <h1 className="text-2xl md:text-3xl font-bold bg-linear-to-r from-rose-400 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
             Current Obsession <Sparkles className="text-pink-400 w-5 h-5 md:w-6 md:h-6" />
           </h1>
           <p className="text-slate-500 mt-2 text-sm md:text-base">
@@ -149,7 +149,7 @@ export default function CurrentObsession() {
               transition-all duration-300 ml-auto mt-2 w-full md:w-auto
               ${isSubmitting 
                 ? "bg-pink-300 cursor-not-allowed" 
-                : "bg-gradient-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 hover:shadow-pink-500/40"}
+                : "bg-linear-to-r from-rose-400 to-pink-500 hover:from-rose-500 hover:to-pink-600 hover:shadow-pink-500/40"}
             `}
           >
             {isSubmitting ? (

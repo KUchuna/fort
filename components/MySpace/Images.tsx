@@ -126,7 +126,7 @@ function ImageCard({ image, index, onClick }: { image: GalleryImage, index: numb
       
       {/* Hover Overlay (Only visible if NOT confirming delete) */}
       {!isConfirming && (
-        <div className="absolute inset-0 bg-gradient-to-t from-rose-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+        <div className="absolute inset-0 bg-linear-to-t from-rose-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
           <p className="text-white font-medium truncate text-sm translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
             {image.title || "Untitled Memory"}
           </p>
@@ -286,7 +286,7 @@ function ExpandedView({ image, onClose }: { image: GalleryImage, onClose: () => 
             <X className="w-6 h-6" />
           </button>
           
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+          <div className="absolute bottom-0 left-0 right-0 p-6 bg-linear-to-t from-black/80 to-transparent">
             <h2 className="text-white text-2xl font-bold">{image.title || "Untitled"}</h2>
             <div className="flex gap-3 mt-2">
                {/* Smart Delete Button */}
@@ -344,7 +344,7 @@ function ExpandedView({ image, onClose }: { image: GalleryImage, onClose: () => 
                   animate={{ opacity: 1, y: 0 }}
                   className="group flex gap-3"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-pink-300 to-rose-400 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-linear-to-br from-pink-300 to-rose-400 flex items-center justify-center text-white font-bold text-xs shrink-0">
                     {comment.user_name.charAt(0).toUpperCase()}
                   </div>
                   
@@ -361,7 +361,7 @@ function ExpandedView({ image, onClose }: { image: GalleryImage, onClose: () => 
                         </button>
                       </div>
                       {/* FIXED: break-words allows long text to wrap */}
-                      <p className="text-slate-700 break-words whitespace-pre-wrap">{comment.content}</p>
+                      <p className="text-slate-700 wrap-break-word whitespace-pre-wrap">{comment.content}</p>
                     </div>
                     <span className="text-[10px] text-rose-300 pl-2">
                       {new Date(comment.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -407,7 +407,7 @@ function ExpandedView({ image, onClose }: { image: GalleryImage, onClose: () => 
               <button 
                 disabled={isPosting || !newComment.trim()}
                 type="submit"
-                className="w-10 h-10 rounded-full bg-gradient-to-tr from-rose-400 to-pink-500 text-white flex items-center justify-center shadow-md shadow-pink-500/20 hover:scale-105 disabled:opacity-50 disabled:scale-100 transition-all"
+                className="w-10 h-10 rounded-full bg-linear-to-tr from-rose-400 to-pink-500 text-white flex items-center justify-center shadow-md shadow-pink-500/20 hover:scale-105 disabled:opacity-50 disabled:scale-100 transition-all"
               >
                 {isPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 ml-0.5" />}
               </button>

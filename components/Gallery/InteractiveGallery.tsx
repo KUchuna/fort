@@ -42,7 +42,7 @@ export default function InteractiveGallery({ images, isAdmin }: InteractiveGalle
             whileHover={{ scale: 1.02, y: -5 }}
             className="break-inside-avoid cursor-pointer group relative"
           >
-            <div className="overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow border border-[var(--color-main)]">
+            <div className="overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-md transition-shadow border border-main">
               <motion.img
                 layoutId={`image-${image.id}`}
                 src={image.url}
@@ -51,7 +51,7 @@ export default function InteractiveGallery({ images, isAdmin }: InteractiveGalle
               />
               
               {/* Hover Overlay Info */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-between items-end rounded-b-2xl">
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-between items-end rounded-b-2xl">
                 <div className="flex items-center text-white space-x-1">
                    <MessageSquare className="w-4 h-4" />
                    <span className="text-sm font-medium">{image.comment_count}</span>

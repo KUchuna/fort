@@ -71,7 +71,7 @@ const handleDeleteTodo = async (id: number) => {
             id="todo"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-rose-100 to-pink-100 p-6 pb-4">
+            <div className="bg-linear-to-r from-rose-100 to-pink-100 p-6 pb-4">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <h2 className="text-2xl font-bold text-rose-950 flex items-center gap-2">
@@ -93,11 +93,11 @@ const handleDeleteTodo = async (id: number) => {
             </div>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gradient-to-b from-white/50 to-rose-50/30" id='todo'>
+            <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-linear-to-b from-white/50 to-rose-50/30" id='todo'>
               
               {/* Input */}
               <form onSubmit={handleAddTodo} className="relative mb-6 group">
-                <div className="absolute inset-0 bg-gradient-to-r from-rose-300 to-pink-300 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity" />
+                <div className="absolute inset-0 bg-linear-to-r from-rose-300 to-pink-300 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity" />
                 <div className="relative flex items-center bg-white border border-rose-100 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-pink-200 transition-all">
                   <input
                     ref={inputRef}
@@ -111,7 +111,7 @@ const handleDeleteTodo = async (id: number) => {
                   <button
                     type="submit"
                     disabled={!inputValue.trim() || isSubmitting}
-                    className="mr-2 p-2 rounded-xl bg-gradient-to-tr from-rose-400 to-pink-500 text-white shadow-lg shadow-pink-500/30 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all"
+                    className="mr-2 p-2 rounded-xl bg-linear-to-tr from-rose-400 to-pink-500 text-white shadow-lg shadow-pink-500/30 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 transition-all"
                   >
                     {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   </button>
@@ -151,9 +151,9 @@ const handleDeleteTodo = async (id: number) => {
                           <button
                             onClick={() => handleToggleTodo(todo.id, todo.is_completed)}
                             className={`
-                              flex-shrink-0 w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center transition-all duration-300
+                              shrink-0 w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center transition-all duration-300
                               ${todo.is_completed 
-                                ? 'bg-gradient-to-tr from-rose-400 to-pink-500 border-transparent text-white' 
+                                ? 'bg-linear-to-tr from-rose-400 to-pink-500 border-transparent text-white' 
                                 : 'border-rose-200 text-transparent hover:border-rose-400'}
                             `}
                           >
@@ -191,7 +191,7 @@ const handleDeleteTodo = async (id: number) => {
         onClick={() => setIsOpen(!isOpen)}
         className={`
           relative w-14 h-14 rounded-full shadow-xl shadow-pink-500/40 flex items-center justify-center text-white transition-all duration-300
-          bg-gradient-to-tr from-rose-500 via-pink-500 to-fuchsia-500
+          bg-linear-to-tr from-rose-500 via-pink-500 to-fuchsia-500
         `}
       >
         <AnimatePresence mode="wait">
