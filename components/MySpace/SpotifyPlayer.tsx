@@ -429,7 +429,7 @@ export default function SpotifyPlayer({onPlayChange}) {
                         {searchResults.map(track => (
                             <div key={track.id} onClick={() => handlePlayTrack(track.uri!)} className="flex items-center gap-3 p-2 hover:bg-[#282828] rounded-md cursor-pointer group transition">
                                 <div className="w-10 h-10 relative shrink-0 bg-[#333]">
-                                    {track.album.images[0] && <Image src={track.album.images[0].url} fill alt="art" className="object-cover rounded" />}
+                                    {track.album.images[0] && <img src={track.album.images[0].url} alt="art" className="w-full h-full object-cover rounded" />}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className={`text-sm truncate ${currentTrack.uri === track.uri ? 'text-[#1DB954]' : 'text-white'}`}>{track.name}</p>
@@ -448,7 +448,7 @@ export default function SpotifyPlayer({onPlayChange}) {
                     {playlists.map(pl => (
                           <div key={pl.id} onClick={() => handleOpenPlaylist(pl)} className="flex items-center gap-3 p-2 hover:bg-[#282828] rounded-md cursor-pointer transition">
                              <div className="w-12 h-12 relative shrink-0 bg-[#333]">
-                                    {pl.images?.[0] && <Image src={pl.images[0].url} fill alt="art" className="object-cover rounded" />}
+                                    {pl.images?.[0] && <img src={pl.images[0].url} alt="art" className="w-full h-full object-cover rounded" />}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm text-white truncate font-medium">{pl.name}</p>
@@ -501,7 +501,7 @@ export default function SpotifyPlayer({onPlayChange}) {
                       </button>
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-16 h-16 relative shrink-0 shadow-lg">
-                            {selectedPlaylist.info.images?.[0] && <Image src={selectedPlaylist.info.images[0].url} fill alt="art" className="object-cover rounded-md" />}
+                            {selectedPlaylist.info.images?.[0] && <img src={selectedPlaylist.info.images[0].url} fill alt="art" className="object-cover rounded-md" />}
                         </div>
                         <h3 className="text-white font-bold text-lg truncate">{selectedPlaylist.info.name}</h3>
                       </div>
@@ -547,7 +547,7 @@ export default function SpotifyPlayer({onPlayChange}) {
                className="relative w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden shadow-lg shrink-0 bg-[#282828] group"
              >
                {hasAlbumArt ? (
-                 <Image src={hasAlbumArt} alt="Album Art" fill className="object-cover" sizes="56px" priority />
+                 <img src={hasAlbumArt} alt="Album Art" className="w-full h-full object-cover" sizes="56px" priority />
                ) : (
                  <div className="w-full h-full flex items-center justify-center text-[#b3b3b3]">
                     <div className="w-8 h-8 bg-[#333] rounded-full animate-pulse"></div>
