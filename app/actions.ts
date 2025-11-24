@@ -7,8 +7,6 @@ import { put, del } from '@vercel/blob';
 import Pusher from 'pusher';
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import PusherBeams from '@pusher/push-notifications-server';
-
 
 const sql = neon(process.env.DB_DATABASE_URL!);
 const SPOTIFY_API = 'https://api.spotify.com/v1';
@@ -20,16 +18,6 @@ const pusher = new Pusher({
   cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!, // Public
   useTLS: true
 });
-
-const beamsClient = new PusherBeams({
-  instanceId: process.env.NEXT_PUBLIC_PUSHER_BEAMS_INSTANCE_ID!,
-  secretKey: process.env.PUSHER_BEAMS_SECRET_KEY!,
-});
-
-
-
-
-
 
 
 export async function loginAction(password: string) {
@@ -415,26 +403,7 @@ export async function sendMessage(formData: FormData) {
     username,
     timestamp: new Date().toISOString()
   });
-
-  try {
-    await beamsClient.publishToInterests(['global-chat'], {
-      web: {
-        notification: {
-          title: `New message from ${username}`,
-          body: text.length > 50 ? text.substring(0, 50) + '...' : text,
-          icon: "https://cdn-icons-png.flaticon.com/512/3069/3069172.png", // Replace with your logo URL
-          deep_link: "https://www.tatuli.beauty/chatroom", // Where to go when clicked
-        },
-      },
-    });
-  } catch (error) {
-    console.error("Beams error:", error);
-  }
-
-
 }
-
-
 export async function getChatHistory() {
   const messages = await sql`
     SELECT * FROM messages 

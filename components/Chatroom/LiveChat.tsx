@@ -2,13 +2,12 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Pusher from 'pusher-js';
-import * as PusherPushNotifications from "@pusher/push-notifications-web"; // Import Beams
 import { getChatHistory, sendMessage, setNickname } from '@/app/actions';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Smile, Loader2, User, X, Sparkles, Volume2, VolumeX, Bell, BellRing } from 'lucide-react';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 
-const NOTIFICATION_SOUND = "/sounds/pop.mp3"; // Ensure this file exists in public/sounds/
+const NOTIFICATION_SOUND = "/sounds/mixkit-elevator-tone-2863.wav";
 
 export default function LiveChat() {
   const [messages, setMessages] = useState<any[]>([]);
@@ -18,49 +17,45 @@ export default function LiveChat() {
   const [showNameModal, setShowNameModal] = useState(false);
   const [tempNickname, setTempNickname] = useState("");
   
-  // Notification States
+  // Notification State
   const [isMuted, setIsMuted] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [beamsClient, setBeamsClient] = useState<any>(null);
 
-  // 1. Initial Setup
+  // 1. Check Permission on Mount
   useEffect(() => {
-    // Setup Audio
-    audioRef.current = new Audio(NOTIFICATION_SOUND);
-    audioRef.current.volume = 0.5;
-
-    // Check existing permission
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setPermission(Notification.permission);
     }
-
-    // Init Beams Client (But don't start it until user agrees)
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-        const client = new PusherPushNotifications.Client({
-            instanceId: process.env.NEXT_PUBLIC_PUSHER_BEAMS_INSTANCE_ID!,
-        });
-        setBeamsClient(client);
-    }
+    audioRef.current = new Audio(NOTIFICATION_SOUND);
+    audioRef.current.volume = 0.5;
   }, []);
 
-  // 2. Request Permission & Register for "Scenario B"
-  const enableNotifications = async () => {
-    if (!beamsClient) return;
+  // 2. Function to Request Permission
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      alert("This browser does not support desktop notifications");
+      return;
+    }
+    const result = await Notification.requestPermission();
+    setPermission(result);
+  };
 
-    try {
-        // This triggers the browser popup "Allow Notifications?"
-        await beamsClient.start();
-        
-        // Subscribe to global messages
-        await beamsClient.addDeviceInterest('global-chat');
-        
-        setPermission('granted');
-        console.log('Successfully registered for push notifications');
-    } catch (err) {
-        console.error('Could not register for push notifications', err);
-        setPermission('denied');
+  // 3. Helper to Fire System Notification
+  const sendSystemNotification = (user: string, text: string) => {
+    if (permission === 'granted' && document.visibilityState === 'hidden') {
+      const notification = new Notification(`New message from ${user}`, {
+        body: text,
+        icon: '/icon.png', // Add a valid icon path in your public folder if you want
+        silent: isMuted, // The OS handles the sound if not muted
+      });
+
+      // Focus window when user clicks the notification
+      notification.onclick = () => {
+        window.focus();
+        // Optional: specific logic to open chat modal if it was closed
+      };
     }
   };
 
@@ -68,7 +63,6 @@ export default function LiveChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // 3. Pusher Channels (Live Chat Logic)
   useEffect(() => {
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
@@ -85,15 +79,19 @@ export default function LiveChat() {
       setMessages((prev) => {
         const isHidden = document.visibilityState === 'hidden';
         
-        // Scenario A: Tab is Open but Hidden (Play sound, update Title)
         if (isHidden) {
+            // A. Play Custom Sound (backup for OS sound)
             if (!isMuted && audioRef.current) {
                 audioRef.current.currentTime = 0;
                 audioRef.current.play().catch(() => {});
             }
+
+            // B. Trigger System Notification
+            sendSystemNotification(data.username, data.text);
+            
+            // C. Update Title
             document.title = `New Message from ${data.username}`;
         }
-        // Scenario B (Tab Closed) is handled entirely by the Service Worker
 
         return [...prev, data];
       });
@@ -111,18 +109,16 @@ export default function LiveChat() {
       pusher.unsubscribe('global-chat');
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [isMuted]);
+  }, [permission, isMuted]); // Re-bind if permission changes
 
+  // ... (handleOnSubmit, handleNicknameSubmit, onEmojiClick logic remains the same)
   const handleOnSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); 
     if (isSending || !inputText.trim()) return;
-
     setIsSending(true);
     setShowEmoji(false);
-    
     const textToSend = inputText;
     setInputText(""); 
-
     try {
         const formData = new FormData();
         formData.append('text', textToSend);
@@ -137,8 +133,8 @@ export default function LiveChat() {
   };
 
   const handleNicknameSubmit = async (formData: FormData) => {
-      await setNickname(formData);
-      setShowNameModal(false);
+    await setNickname(formData);
+    setShowNameModal(false);
   };
 
   const onEmojiClick = (emojiData: EmojiClickData) => {
@@ -148,7 +144,7 @@ export default function LiveChat() {
   return (
     <div className="w-full max-w-md mx-auto font-gilroy relative">
       
-      {/* NICKNAME MODAL */}
+      {/* ... (Nickname Modal Code remains same) ... */}
       <AnimatePresence>
         {showNameModal && (
             <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
@@ -199,22 +195,18 @@ export default function LiveChat() {
            </div>
            
            <div className="flex items-center gap-2">
-               {/* NOTIFICATION TOGGLE */}
+               {/* --- NOTIFICATION BUTTON --- */}
                {permission === 'default' && (
                  <button 
-                   onClick={enableNotifications}
-                   className="p-2 bg-white/40 hover:bg-white/70 rounded-full transition-colors text-[var(--color-accent)] animate-bounce"
-                   title="Enable Background Notifications"
+                   onClick={requestNotificationPermission}
+                   className="p-2 hover:bg-white/40 rounded-full transition-colors text-[var(--color-accent)] animate-pulse"
+                   title="Enable Notifications"
                  >
                    <BellRing size={16} />
                  </button>
                )}
-               {permission === 'granted' && (
-                  <div className="p-2 text-[var(--color-accent)]" title="Notifications Active">
-                      <Bell size={16} />
-                  </div>
-               )}
 
+               {/* --- MUTE BUTTON --- */}
                <button 
                  onClick={() => setIsMuted(!isMuted)}
                  className="p-2 hover:bg-white/40 rounded-full transition-colors text-[var(--color-accent)]"
