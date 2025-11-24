@@ -5,7 +5,7 @@ import LiveChat from "@/components/Chatroom/LiveChat";
 
 export default function ChatRoomLayout() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-[#F9F1F0] relative overflow-hidden">
+    <main className="min-h-screen pt-20 flex flex-col items-center justify-center bg-[#F9F1F0] relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
