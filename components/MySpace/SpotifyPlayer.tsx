@@ -501,7 +501,7 @@ export default function SpotifyPlayer({onPlayChange}) {
                       </button>
                       <div className="flex items-center gap-3 mb-4">
                         <div className="w-16 h-16 relative shrink-0 shadow-lg">
-                            {selectedPlaylist.info.images?.[0] && <img src={selectedPlaylist.info.images[0].url} fill alt="art" className="object-cover rounded-md" />}
+                            {selectedPlaylist.info.images?.[0] && <img src={selectedPlaylist.info.images[0].url} alt="art" className="w-full h-full object-cover rounded-md" />}
                         </div>
                         <h3 className="text-white font-bold text-lg truncate">{selectedPlaylist.info.name}</h3>
                       </div>
