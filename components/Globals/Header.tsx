@@ -3,9 +3,11 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image"; // Don't forget this import
 import { useRouter } from "next/navigation";
 import { LogOut, Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import gift from "@/public/images/gift.png";
 
 export default function Header() {
   const router = useRouter();
@@ -13,7 +15,6 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { scrollY } = useScroll();
   
-  // 1. Get Session Data
   const { data: session } = authClient.useSession();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -21,19 +22,19 @@ export default function Header() {
     setIsScrolled(latest > 50);
   });
 
-  // --- ADDED WISHLIST HERE ---
+  // --- UPDATED NAV LINKS ---
   const navLinks = [
     { name: "About me", href: "/interests" },
     { name: "Gallery", href: "/gallery" },
     { name: "Chatroom", href: "/chatroom" },
-    { name: "Wishlist", href: "/wishlist" }, 
+    // Added the 'image' property here
+    { name: "Wishlist", href: "/wishlist", image: gift }, 
   ];
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "unset";
   }, [isOpen]);
 
-  // 2. Logout Logic
   const handleLogout = async () => {
     setIsLoggingOut(true);
     await authClient.signOut({
@@ -78,6 +79,29 @@ export default function Header() {
           <nav className="hidden md:flex gap-8 items-center">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href} className="relative group">
+                
+                {/* --- GIFT IMAGE LOGIC --- */}
+                {link.image && (
+                    <motion.div
+                        className="absolute -top-5 -right-3 pointer-events-none"
+                        animate={{ 
+                            y: [0, -3, 0], 
+                            rotate: [0, 5, 0, -5, 0] 
+                        }}
+                        transition={{ 
+                            duration: 4, 
+                            repeat: Infinity, 
+                            ease: "easeInOut" 
+                        }}
+                    >
+                        <Image 
+                            src={link.image} 
+                            alt="gift" 
+                            className="w-6 h-auto drop-shadow-sm" 
+                        />
+                    </motion.div>
+                )}
+
                 <span className="font-gilroy font-medium text-sm uppercase tracking-wider text-black/80 hover:text-black transition-colors">
                   {link.name}
                 </span>
@@ -96,7 +120,6 @@ export default function Header() {
                     </motion.button>
                 </Link>
 
-                {/* Desktop Logout Button */}
                 {session && (
                     <motion.button
                         onClick={handleLogout}
@@ -173,12 +196,27 @@ export default function Header() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 20 }}
                   transition={{ delay: 0.1 + i * 0.1 }}
+                  className="relative"
                 >
                   <Link 
                     href={link.href} 
                     onClick={() => setIsOpen(false)}
-                    className="font-gilroy font-bold text-3xl text-black hover:text-accent transition-colors"
+                    className="font-gilroy font-bold text-3xl text-black hover:text-accent transition-colors relative"
                   >
+                    {/* --- MOBILE GIFT IMAGE --- */}
+                    {link.image && (
+                        <motion.div
+                            className="absolute -top-6 -right-6 pointer-events-none"
+                            animate={{ rotate: [0, 10, 0, -10, 0] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                        >
+                            <Image 
+                                src={link.image} 
+                                alt="gift" 
+                                className="w-8 h-auto" 
+                            />
+                        </motion.div>
+                    )}
                     {link.name}
                   </Link>
                 </motion.li>
@@ -199,7 +237,6 @@ export default function Header() {
                   </Link>
                 </motion.li>
 
-                {/* Mobile Logout Link */}
                 {session && (
                     <motion.li
                         initial={{ opacity: 0, y: 20 }}
