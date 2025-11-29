@@ -3,38 +3,55 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { LogOut, Loader2 } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 export default function Header() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { scrollY } = useScroll();
+  
+  // 1. Get Session Data
+  const { data: session } = authClient.useSession();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    if (latest > 50) {
-      setIsScrolled(true);
-    } else {
-      setIsScrolled(false);
-    }
+    setIsScrolled(latest > 50);
   });
 
+  // --- ADDED WISHLIST HERE ---
   const navLinks = [
     { name: "About me", href: "/interests" },
     { name: "Gallery", href: "/gallery" },
     { name: "Chatroom", href: "/chatroom" },
+    { name: "Wishlist", href: "/wishlist" }, 
   ];
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    document.body.style.overflow = isOpen ? "hidden" : "unset";
   }, [isOpen]);
+
+  // 2. Logout Logic
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await authClient.signOut({
+        fetchOptions: {
+            onSuccess: () => {
+                setIsOpen(false); 
+                router.refresh(); 
+                router.push("/"); 
+            }
+        }
+    });
+    setIsLoggingOut(false);
+  };
 
   return (
     <>
       <motion.header
-        className={`fixed top-0 left-0 right-0 z-200000 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled || isOpen
             ? "py-4 bg-white/70 backdrop-blur-md border-b border-white/20 shadow-sm"
             : "py-6 bg-transparent"
@@ -43,7 +60,6 @@ export default function Header() {
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Subtle Gradient Line at the bottom when scrolled */}
         {isScrolled && (
             <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-accent/50 to-transparent" />
         )}
@@ -69,17 +85,38 @@ export default function Header() {
               </Link>
             ))}
             
-            <Link href="/myspace">
-                <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="px-5 py-2 rounded-full bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-accent transition-colors"
-                >
-                    Personal space
-                </motion.button>
-            </Link>
+            <div className="flex items-center gap-3">
+                <Link href="/myspace">
+                    <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="px-5 py-2 rounded-full bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-accent transition-colors"
+                    >
+                        Personal space
+                    </motion.button>
+                </Link>
+
+                {/* Desktop Logout Button */}
+                {session && (
+                    <motion.button
+                        onClick={handleLogout}
+                        disabled={isLoggingOut}
+                        whileHover={{ scale: 1.1, color: "#ef4444" }} 
+                        whileTap={{ scale: 0.9 }}
+                        className="p-2 rounded-full text-black/60 hover:bg-black/5 transition-colors"
+                        title="Sign out"
+                    >
+                        {isLoggingOut ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                            <LogOut className="w-5 h-5" />
+                        )}
+                    </motion.button>
+                )}
+            </div>
           </nav>
 
+          {/* Mobile Toggle */}
           <div className="md:hidden relative z-50">
             <button 
                 onClick={() => setIsOpen(!isOpen)}
@@ -116,13 +153,14 @@ export default function Header() {
         </div>
       </motion.header>
 
+      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-199999 bg-background/95 backdrop-blur-xl md:hidden flex flex-col items-center justify-center "
+            className="fixed inset-0 z-40 bg-white/95 backdrop-blur-xl md:hidden flex flex-col items-center justify-center "
           >
             <div className="absolute top-1/4 right-0 w-64 h-64 bg-main rounded-full blur-[100px] opacity-50" />
             <div className="absolute bottom-1/4 left-0 w-64 h-64 bg-accent rounded-full blur-[100px] opacity-30" />
@@ -145,6 +183,7 @@ export default function Header() {
                   </Link>
                 </motion.li>
               ))}
+
               <motion.li
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -159,6 +198,31 @@ export default function Header() {
                     Personal space
                   </Link>
                 </motion.li>
+
+                {/* Mobile Logout Link */}
+                {session && (
+                    <motion.li
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        transition={{ delay: 0.1 + 4 * 0.1 }}
+                    >
+                        <button
+                            onClick={handleLogout}
+                            disabled={isLoggingOut}
+                            className="flex items-center gap-2 font-gilroy font-bold text-xl text-red-500 hover:text-red-600 transition-colors mt-4"
+                        >
+                            {isLoggingOut ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <>
+                                    <LogOut className="w-5 h-5" />
+                                    Logout
+                                </>
+                            )}
+                        </button>
+                    </motion.li>
+                )}
             </ul>
           </motion.div>
         )}

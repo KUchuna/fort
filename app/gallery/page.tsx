@@ -1,7 +1,7 @@
 import { getImages } from '@/app/actions';
 import InteractiveGallery from '@/components/Gallery/InteractiveGallery';
 import ParallaxText from '@/components/Gallery/ParallaxText';
-import { verifySession } from '@/lib/auth';
+import { verifySession } from '@/lib/own-auth';
 
 export default async function GalleryPage() {
   const images = await getImages();

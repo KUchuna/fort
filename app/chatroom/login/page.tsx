@@ -1,4 +1,4 @@
-import { verifyChatAccess } from '@/lib/auth'; // Ensure path is correct
+import { verifyChatAccess } from '@/lib/own-auth'; // Ensure path is correct
 import { redirect } from 'next/navigation';
 import ChatLoginForm from '@/components/Chatroom/ChatLoginForm';
 

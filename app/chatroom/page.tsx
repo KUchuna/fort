@@ -1,5 +1,5 @@
 import ChatRoomLayout from "@/components/Chatroom/ChatRoomLayout";
-import { verifyChatAccess } from "@/lib/auth";
+import { verifyChatAccess } from "@/lib/own-auth";
 import { redirect } from "next/navigation";
 
 export default async function ChatRoom() {

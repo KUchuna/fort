@@ -2,11 +2,15 @@
 
 import { neon } from "@neondatabase/serverless";
 import { revalidatePath } from "next/cache";
-import { createSession, createChatSession, verifySession} from '@/lib/auth';
+import { createSession, createChatSession, verifySession} from '@/lib/own-auth';
 import { put, del } from '@vercel/blob';
 import Pusher from 'pusher';
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { wishlistItem } from "@/lib/auth-schema";
+import {auth} from "@/lib/auth"
+import { db } from "@/lib/db";
+import { eq, and } from "drizzle-orm";
 
 const sql = neon(process.env.DB_DATABASE_URL!);
 const SPOTIFY_API = 'https://api.spotify.com/v1';
@@ -52,9 +56,6 @@ export async function addObsession(formData: FormData) {
 
   revalidatePath("/");
 }
-
-
-
 
 export async function getAccessToken() {
   const refresh_token = process.env.SPOTIFY_REFRESH_TOKEN;
@@ -423,4 +424,39 @@ export async function loginToChat(prevState: any, formData: FormData) {
   } else {
     return { error: 'Oops! Wrong password 🎀' };
   }
+}
+
+export async function addWishlistItem(formData: FormData) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  const title = formData.get("title") as string;
+  const url = formData.get("url") as string;
+  const price = formData.get("price") as string;
+  const priority = formData.get("priority") as string;
+
+  await db.insert(wishlistItem).values({
+    id: crypto.randomUUID(),
+    userId: session.user.id,
+    title,
+    url,
+    price,
+    priority,
+  });
+
+  revalidatePath("/wishlist");
+}
+
+export async function deleteWishlistItem(itemId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  await db.delete(wishlistItem).where(
+    and(
+      eq(wishlistItem.id, itemId),
+      eq(wishlistItem.userId, session.user.id)
+    )
+  );
+
+  revalidatePath("/wishlist");
 }

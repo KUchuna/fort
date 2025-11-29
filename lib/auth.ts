@@ -1,72 +1,29 @@
-import { SignJWT, jwtVerify } from 'jose';
-import { cookies } from 'next/headers';
+import { betterAuth } from "better-auth";
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createAuthMiddleware, APIError } from "better-auth/api";
+import { db } from "./db"; 
+import { user, session, account, verification } from "./auth-schema"; 
 
-const SECRET_KEY = new TextEncoder().encode(process.env.MYSPACE_PASSWORD); 
+export const auth = betterAuth({
+    database: drizzleAdapter(db, {
+        provider: "pg",
+        schema: { user, session, account, verification },
+    }),
+    emailAndPassword: {
+        enabled: true,
+    },
+    hooks: {
+        before: createAuthMiddleware(async (ctx) => {
+            if (ctx.path === "/sign-up/email") {
+                
+                const body = ctx.body as { secretCode?: string };
 
-export async function createSession() {
-  const token = await new SignJWT({ role: 'admin' })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime('24h')
-    .sign(SECRET_KEY);
-
-  const cookieStore = await cookies();
-  cookieStore.set('myspace_session', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/',
-  });
-}
-
-export async function verifySession() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get('myspace_session')?.value;
-  if (!token) return false;
-  try {
-    const { payload } = await jwtVerify(token, SECRET_KEY);
-    return payload.role === 'admin';
-  } catch (error) {
-    return false;
-  }
-}
-
-
-export async function createChatSession() {
-  const token = await new SignJWT({ role: 'guest' })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuedAt()
-    .setExpirationTime('30d')
-    .sign(SECRET_KEY);
-
-  const cookieStore = await cookies();
-  
-  cookieStore.set('chat_session', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/',
-  });
-}
-
-export async function verifyChatAccess() {
-  const cookieStore = await cookies();
-  
-  const adminToken = cookieStore.get('myspace_session')?.value;
-  if (adminToken) {
-    try {
-        const { payload } = await jwtVerify(adminToken, SECRET_KEY);
-        if (payload.role === 'admin') return true;
-    } catch (e) {}
-  }
-
-  const chatToken = cookieStore.get('chat_session')?.value;
-  if (!chatToken) return false;
-
-  try {
-    const { payload } = await jwtVerify(chatToken, SECRET_KEY);
-    return payload.role === 'guest';
-  } catch (error) {
-    return false;
-  }
-}
+                if (body.secretCode !== process.env.SIGNUP_SECRET) {
+                    throw new APIError("BAD_REQUEST", {
+                        message: "Invalid Secret Code. Ask the admin for access.",
+                    });
+                }
+            }
+        }),
+    },
+});

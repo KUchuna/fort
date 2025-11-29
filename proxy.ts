@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifySession, verifyChatAccess } from '@/lib/auth';
+import { verifySession, verifyChatAccess } from '@/lib/own-auth';
 export async function proxy(request: NextRequest) {
   
   if (request.nextUrl.pathname.startsWith('/myspace')) {
