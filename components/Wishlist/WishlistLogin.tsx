@@ -208,8 +208,8 @@ export default function WishlistLogin() {
             {/* General API Error Message */}
             {generalError && (
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
+                initial={{ opacity: 0}}
+                animate={{ opacity: 1}}
                 className="text-red-500 text-sm flex items-center gap-2 justify-center bg-red-50 p-2 rounded-lg"
               >
                 <AlertCircle className="w-4 h-4" />
