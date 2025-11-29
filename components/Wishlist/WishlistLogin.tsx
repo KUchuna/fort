@@ -65,13 +65,14 @@ export default function WishlistLogin() {
           email: formData.email,
           password: formData.password,
           name: formData.name,
-          // @ts-ignore - Better Auth types might not know about custom fields, but the hook will receive it
+          // @ts-ignore
           secretCode: formData.secretCode, 
-          callbackURL: "/wishlist",
+          callbackURL: "/email-verified",
         });
         if (error) throw error;
+        router.push(`/wishlist/verify-email?email=${encodeURIComponent(formData.email)}`);        
+        return;
       } else {
-        // --- SIGN IN LOGIC ---
         const { error } = await authClient.signIn.email({
           email: formData.email,
           password: formData.password,
@@ -82,7 +83,6 @@ export default function WishlistLogin() {
 
       router.push("/wishlist");
     } catch (err: any) {
-      // Better Auth errors come in different shapes, sometimes err.message, sometimes err.body.message
       setGeneralError(err.message || err.body?.message || "Invalid credentials or secret code.");
     } finally {
       setIsLoading(false);
