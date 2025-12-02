@@ -355,17 +355,6 @@ export async function deleteComment(commentId: number) {
 
 
 
-export async function setNickname(formData: FormData) {
-  const nickname = formData.get('nickname') as string;
-  if (!nickname) return;
-
-  const cookieStore = await cookies();
-  
-  cookieStore.set('chat_nickname', nickname, { 
-    maxAge: 60 * 60 * 24 * 30 
-  });
-}
-
 export async function sendMessage(formData: FormData) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new Error("Unauthorized");

@@ -21,9 +21,9 @@ export default function EmailVerifiedPage() {
           Your email has been verified successfully. You now have full access to the wishlist.
         </p>
         
-        <Link href="/wishlist">
+        <Link href="/">
           <button className="w-full bg-black text-white font-bold py-4 rounded-xl hover:bg-zinc-800 transition-all flex items-center justify-center gap-2">
-            Go to Wishlist <ArrowRight className="w-4 h-4" />
+            Go back home <ArrowRight className="w-4 h-4" />
           </button>
         </Link>
       </motion.div>

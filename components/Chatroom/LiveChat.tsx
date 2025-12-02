@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Pusher from 'pusher-js';
-import { getChatHistory, sendMessage, setNickname } from '@/app/actions';
+import { getChatHistory, sendMessage } from '@/app/actions';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Smile, Loader2, User, X, Sparkles, Volume2, VolumeX, Bell, BellRing } from 'lucide-react';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
@@ -14,9 +14,7 @@ export default function LiveChat() {
   const [inputText, setInputText] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [showNameModal, setShowNameModal] = useState(false);
-  const [tempNickname, setTempNickname] = useState("");
-  
+
   // Notification State
   const [isMuted, setIsMuted] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>('default');
@@ -132,58 +130,12 @@ export default function LiveChat() {
     }
   };
 
-  const handleNicknameSubmit = async (formData: FormData) => {
-    await setNickname(formData);
-    setShowNameModal(false);
-  };
-
   const onEmojiClick = (emojiData: EmojiClickData) => {
     setInputText((prev) => prev + emojiData.emoji);
   };
 
   return (
     <div className="w-full max-w-md mx-auto font-gilroy relative">
-      
-      {/* ... (Nickname Modal Code remains same) ... */}
-      <AnimatePresence>
-        {showNameModal && (
-            <div className="absolute inset-0 z-50 flex items-center justify-center p-4">
-                <motion.div 
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                    onClick={() => setShowNameModal(false)}
-                    className="absolute inset-0 bg-black/20 backdrop-blur-sm rounded-3xl"
-                />
-                <motion.div 
-                    initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white w-full max-w-xs p-6 rounded-3xl shadow-2xl relative z-10 border border-[var(--color-accent)]"
-                >
-                    <button onClick={() => setShowNameModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                        <X size={18} />
-                    </button>
-                    <div className="flex flex-col items-center mb-4">
-                        <div className="w-12 h-12 bg-[var(--color-background)] rounded-full flex items-center justify-center mb-2">
-                            <Sparkles size={20} className="text-[var(--color-accent)]" />
-                        </div>
-                        <h3 className="font-bold text-lg text-black">Who are you?</h3>
-                        <p className="text-xs text-gray-400">Pick a cute nickname</p>
-                    </div>
-                    <form action={handleNicknameSubmit} className="space-y-3">
-                        <input 
-                            name="nickname"
-                            value={tempNickname}
-                            onChange={(e) => setTempNickname(e.target.value)}
-                            placeholder="e.g. Princess Peach"
-                            className="w-full bg-[var(--color-background)] border border-transparent focus:border-[var(--color-accent)] rounded-xl px-4 py-2 text-center text-sm outline-none transition-all"
-                            autoFocus
-                        />
-                        <button type="submit" className="w-full bg-[var(--color-accent)] text-white font-bold py-2 rounded-xl hover:brightness-110 transition-all text-sm shadow-md shadow-[var(--color-accent)]/30">
-                            Save Name
-                        </button>
-                    </form>
-                </motion.div>
-            </div>
-        )}
-      </AnimatePresence>
 
       <div className="relative border border-[var(--color-accent)] rounded-3xl overflow-hidden bg-[var(--color-background)] shadow-xl shadow-[var(--color-accent)]/20 h-[500px] flex flex-col">
         
@@ -212,16 +164,6 @@ export default function LiveChat() {
                  className="p-2 hover:bg-white/40 rounded-full transition-colors text-[var(--color-accent)]"
                >
                  {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-               </button>
-
-               <button 
-                 onClick={() => setShowNameModal(true)}
-                 className="flex items-center gap-1.5 bg-white/40 hover:bg-white/60 px-3 py-1.5 rounded-full transition-all"
-               >
-                 <User size={14} className="text-[var(--color-accent)]" />
-                 <span className="text-[10px] font-bold text-[var(--color-accent)] uppercase tracking-wider">
-                   Set Name
-                 </span>
                </button>
            </div>
         </div>
