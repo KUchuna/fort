@@ -5,6 +5,9 @@ import { getTodos } from '../../api';
 import ImageUpload from "@/components/MySpace/ImageUpload";
 import { getImages } from "../actions";
 import Images from "@/components/MySpace/Images";
+import Link from "next/link";
+import uhy from "@/public/images/uhy.png"
+import Image from "next/image";
 
 export default async function MySpace() {
 
@@ -16,7 +19,12 @@ export default async function MySpace() {
       <h1 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-rose-400 to-pink-600 bg-clip-text text-transparent">Welcome, Tamar ✨</h1>
       <p className="italic mb-4 text-sm md:text-base">This is your private space, which only you can access.</p>
       <hr />
-      
+      <div className="text-lg font-bold bg-gradient-to-r from-rose-400 to-pink-600 bg-clip-text text-transparent flex w-full justify-center items-center">
+        <Link href={"/work"} className="flex items-center gap-2">
+          Go to workspace
+          <Image src={uhy} alt="" width={40} height={40}/>
+        </Link>
+      </div>
       <div className="flex flex-col lg:flex-row justify-between items-start gap-8 mt-6">
         <div className="w-full lg:flex-1">
              <CurrentObsession />
