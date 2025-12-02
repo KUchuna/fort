@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
 export default async function CommunityWishlist() {
   const session = await auth.api.getSession({ headers: await headers() });
   
-  if (!session) redirect("/wishlist/login");
+  if (!session) redirect("/login");
 
   const allUsers = await db.select().from(user);
 

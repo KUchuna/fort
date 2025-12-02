@@ -76,12 +76,12 @@ export default function WishlistLogin() {
         const { error } = await authClient.signIn.email({
           email: formData.email,
           password: formData.password,
-          callbackURL: "/wishlist",
+          callbackURL: "/login",
         });
         if (error) throw error;
       }
 
-      router.push("/wishlist");
+      router.push("/");
     } catch (err: any) {
       setGeneralError(err.message || err.body?.message || "Invalid credentials or secret code.");
     } finally {

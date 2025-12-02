@@ -7,10 +7,10 @@ import { put, del } from '@vercel/blob';
 import Pusher from 'pusher';
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
-import { wishlistItem } from "@/lib/auth-schema";
+import { wishlistItem, timeEntries, workTasks } from "@/lib/auth-schema";
 import {auth} from "@/lib/auth"
 import { db } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 
 const sql = neon(process.env.DB_DATABASE_URL!);
 const SPOTIFY_API = 'https://api.spotify.com/v1';
@@ -459,4 +459,98 @@ export async function deleteWishlistItem(itemId: string) {
   );
 
   revalidatePath("/wishlist");
+}
+
+export async function startTimer(clientName: string, description: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  // Safety: Stop any currently running timer first
+  const activeTimer = await db.query.timeEntries.findFirst({
+    where: and(
+        eq(timeEntries.userId, session.user.id), 
+        isNull(timeEntries.endTime)
+    ),
+  });
+
+  if (activeTimer) {
+    await stopTimer();
+  }
+
+  // Start new one
+  await db.insert(timeEntries).values({
+    id: crypto.randomUUID(),
+    userId: session.user.id,
+    clientName,
+    description,
+    startTime: new Date(),
+  });
+
+  revalidatePath("/work");
+}
+
+export async function stopTimer() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  const now = new Date();
+
+  // Find the running task
+  const activeTimer = await db.query.timeEntries.findFirst({
+    where: and(
+        eq(timeEntries.userId, session.user.id), 
+        isNull(timeEntries.endTime)
+    ),
+  });
+
+  if (!activeTimer) return;
+
+  const durationSeconds = Math.floor((now.getTime() - activeTimer.startTime.getTime()) / 1000);
+
+  await db.update(timeEntries)
+    .set({ endTime: now, duration: durationSeconds })
+    .where(eq(timeEntries.id, activeTimer.id));
+
+  revalidatePath("/work");
+}
+
+export async function createTask(formData: FormData) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  const title = formData.get("title") as string;
+  const clientName = formData.get("clientName") as string;
+  const priority = formData.get("priority") as string;
+
+  await db.insert(workTasks).values({
+    id: crypto.randomUUID(),
+    userId: session.user.id,
+    title,
+    clientName,
+    priority,
+    status: "to_request", // Default column
+  });
+
+  revalidatePath("/work");
+}
+
+export async function updateTaskStatus(taskId: string, newStatus: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  await db.update(workTasks)
+    .set({ status: newStatus })
+    .where(and(eq(workTasks.id, taskId), eq(workTasks.userId, session.user.id)));
+
+  revalidatePath("/work");
+}
+
+export async function deleteTask(taskId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  await db.delete(workTasks)
+    .where(and(eq(workTasks.id, taskId), eq(workTasks.userId, session.user.id)));
+
+  revalidatePath("/work");
 }

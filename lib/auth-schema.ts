@@ -13,6 +13,7 @@ export const user = pgTable("user", {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+  role: text("role").notNull().default("user"),
 });
 
 export const session = pgTable(
@@ -129,6 +130,28 @@ export const wishlistItem = pgTable("wishlist_item", {
   url: text("url"),
   price: text("price"), // Using text for flexibility (e.g. "$50 approx")
   priority: text("priority").default("medium"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const timeEntries = pgTable("time_entries", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  clientName: text("client_name").notNull(), // e.g., "Client A"
+  description: text("description"), // e.g., "Reviewing PBCs"
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"), // If NULL, the timer is currently running!
+  duration: integer("duration"), // Stored in seconds
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const workTasks = pgTable("work_tasks", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  clientName: text("client_name").notNull(),
+  status: text("status").notNull().default("pending"), // requested, pending, received, done
+  priority: text("priority").default("medium"),
+  dueDate: timestamp("due_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

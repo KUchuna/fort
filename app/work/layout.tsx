@@ -7,13 +7,15 @@ export default async function ProtectedLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({
+    const session = await auth.api.getSession({
     headers: await headers(),
-  });
+    });
 
-  if (!session) {
+    if (!session) {
     redirect("/login");
-  }
-
-  return <>{children}</>;
+    }
+    if (session.user.role !== "admin") {
+        redirect("/")
+    }
+    return <>{children}</>;
 }

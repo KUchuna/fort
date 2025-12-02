@@ -9,7 +9,7 @@ export default async function Login() {
   });
 
   if (session) {
-    redirect("/wishlist");
+    redirect("/");
   }
 
   return (
