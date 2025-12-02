@@ -23,25 +23,10 @@ const pusher = new Pusher({
   useTLS: true
 });
 
-
-export async function loginAction(password: string) {
-  if (password !== process.env.MYSPACE_PASSWORD) {
-    return { success: false, message: "Incorrect password" };
-  }
-
-  await createSession();
-
-  revalidatePath('/'); 
-  
-  return { success: true };
-}
-
 export async function addObsession(formData: FormData) {
 
-  const isAuthorized = await verifySession(); 
-  if (!isAuthorized) {
-      throw new Error("Unauthorized");
-  }
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
 
   const description = formData.get("description");
 
@@ -227,10 +212,8 @@ export async function setRepeatMode(deviceId: string, state: 'track' | 'context'
 }
 
 export async function addTodo(title: string) {
-  const isAuthorized = await verifySession();
-  if (!isAuthorized) {
-    throw new Error("Unauthorized");
-  }
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
   
   if (!title || title.trim().length === 0) return;
 
@@ -386,13 +369,13 @@ export async function setNickname(formData: FormData) {
 }
 
 export async function sendMessage(formData: FormData) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
   const text = formData.get('text') as string;
   if (!text) return;
-
-  const cookieStore = await cookies();
-  const storedName = cookieStore.get('chat_nickname')?.value;
-
-  const username = storedName || 'Guest ' + Math.floor(Math.random() * 1000); 
+  
+  const username = session.user.name
 
   await sql`
     INSERT INTO messages (text, username) 
@@ -412,18 +395,6 @@ export async function getChatHistory() {
     LIMIT 50
   `;
   return messages.reverse();
-}
-
-
-export async function loginToChat(prevState: any, formData: FormData) {
-  const password = formData.get('password') as string;
-
-  if (password === process.env.CHAT_PASSWORD) {
-    await createChatSession();
-    redirect('/chatroom');
-  } else {
-    return { error: 'Oops! Wrong password 🎀' };
-  }
 }
 
 export async function addWishlistItem(formData: FormData) {

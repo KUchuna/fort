@@ -70,7 +70,7 @@ export default function WishlistLogin() {
           callbackURL: "/email-verified",
         });
         if (error) throw error;
-        router.push(`/wishlist/verify-email?email=${encodeURIComponent(formData.email)}`);        
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);        
         return;
       } else {
         const { error } = await authClient.signIn.email({

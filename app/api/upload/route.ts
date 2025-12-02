@@ -1,6 +1,8 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
 import { verifySession } from '@/lib/own-auth';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
@@ -11,7 +13,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       request,
       onBeforeGenerateToken: async (pathname, /* clientPayload */) => {
 
-        const session = await verifySession();
+        const session = await auth.api.getSession({ headers: await headers() });
         if (!session) throw new Error("Unauthorized");
 
         return {
