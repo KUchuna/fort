@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { del } from '@vercel/blob';
 import Pusher from 'pusher';
 import { cookies, headers } from "next/headers";
-import { wishlistItem, timeEntries, workTasks, workTodos } from "@/lib/auth-schema";
+import { wishlistItem, timeEntries, workTasks, workTodos, clients } from "@/lib/auth-schema";
 import {auth} from "@/lib/auth"
 import { db } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
@@ -419,7 +419,7 @@ export async function deleteWishlistItem(itemId: string) {
   revalidatePath("/wishlist");
 }
 
-export async function startTimer(clientName: string, description: string) {
+export async function startTimer(clientId: string, description: string) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new Error("Unauthorized");
 
@@ -439,7 +439,7 @@ export async function startTimer(clientName: string, description: string) {
   await db.insert(timeEntries).values({
     id: crypto.randomUUID(),
     userId: session.user.id,
-    clientName,
+    clientId, // 👈 Save the ID
     description,
     startTime: new Date(),
   });
@@ -479,14 +479,15 @@ export async function createTask(formData: FormData) {
   const title = formData.get("title") as string;
   const clientName = formData.get("clientName") as string;
   const priority = formData.get("priority") as string;
+  const clientId = formData.get("clientId") as string;
 
   await db.insert(workTasks).values({
     id: crypto.randomUUID(),
     userId: session.user.id,
     title,
-    clientName,
     priority,
     status: "to_request", // Default column
+    clientId: clientId,
   });
 
   revalidatePath("/work");
@@ -516,15 +517,15 @@ export async function deleteTask(taskId: string) {
 export async function createWorkTodo(formData: FormData) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) throw new Error("Unauthorized");
-
+  
   await db.insert(workTodos).values({
     id: crypto.randomUUID(),
     userId: session.user.id,
     title: formData.get("title") as string,
-    clientName: formData.get("clientName") as string,
     description: formData.get("description") as string,
     dueDate: formData.get("dueDate") ? new Date(formData.get("dueDate") as string) : null,
     isCompleted: false,
+    clientId: formData.get("clientId") as string
   });
 
   revalidatePath("/work");
@@ -547,6 +548,42 @@ export async function deleteWorkTodo(id: string) {
 
   await db.delete(workTodos)
     .where(and(eq(workTodos.id, id), eq(workTodos.userId, session.user.id)));
+
+  revalidatePath("/work");
+}
+
+export async function createClient(formData: FormData) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  const name = formData.get("name") as string;
+
+  await db.insert(clients).values({
+    id: crypto.randomUUID(),
+    userId: session.user.id,
+    name,
+  });
+
+  revalidatePath("/work");
+}
+
+export async function updateClient(clientId: string, newName: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  await db.update(clients)
+    .set({ name: newName })
+    .where(and(eq(clients.id, clientId), eq(clients.userId, session.user.id)));
+
+  revalidatePath("/work");
+}
+
+export async function deleteClient(clientId: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  await db.delete(clients)
+    .where(and(eq(clients.id, clientId), eq(clients.userId, session.user.id)));
 
   revalidatePath("/work");
 }

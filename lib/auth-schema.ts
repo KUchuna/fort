@@ -136,33 +136,41 @@ export const wishlistItem = pgTable("wishlist_item", {
 export const timeEntries = pgTable("time_entries", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  clientName: text("client_name").notNull(), // e.g., "Client A"
-  description: text("description"), // e.g., "Reviewing PBCs"
+  clientId: text("client_id").references(() => clients.id, { onDelete: "cascade" }),
+  description: text("description"), 
   startTime: timestamp("start_time").notNull(),
-  endTime: timestamp("end_time"), // If NULL, the timer is currently running!
-  duration: integer("duration"), // Stored in seconds
+  endTime: timestamp("end_time"),
+  duration: integer("duration"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const workTasks = pgTable("work_tasks", {
   id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
   title: text("title").notNull(),
-  clientName: text("client_name").notNull(),
-  status: text("status").notNull().default("pending"), // requested, pending, received, done
+  clientId: text("client_id").references(() => clients.id, { onDelete: "cascade" }),
   priority: text("priority").default("medium"),
+  status: text("status").notNull().default("to_request"),
+  description: text("description"), 
   dueDate: timestamp("due_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const workTodos = pgTable("work_todos", {
   id: text("id").primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
   title: text("title").notNull(),
-  clientName: text("client_name"),
+  clientId: text("client_id").references(() => clients.id, { onDelete: "cascade" }),
   description: text("description"),
   dueDate: timestamp("due_date"),
-  isCompleted: boolean("is_completed").default(false).notNull(), // Track completion
+  isCompleted: boolean("is_completed").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const clients = pgTable("clients", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -194,4 +202,30 @@ export const commentsRelations = relations(comments, ({one}) => ({
 
 export const imagesRelations = relations(images, ({many}) => ({
   comments: many(comments),
+}));
+
+export const clientRelations = relations(clients, ({ many }) => ({
+  tasks: many(workTasks),
+  todos: many(workTodos),
+}));
+
+export const tasksRelations = relations(workTasks, ({ one }) => ({
+  client: one(clients, {
+    fields: [workTasks.clientId],
+    references: [clients.id],
+  }),
+}));
+
+export const todosRelations = relations(workTodos, ({ one }) => ({
+  client: one(clients, {
+    fields: [workTodos.clientId],
+    references: [clients.id],
+  }),
+}));
+
+export const timeEntriesRelations = relations(timeEntries, ({ one }) => ({
+  client: one(clients, {
+    fields: [timeEntries.clientId],
+    references: [clients.id],
+  }),
 }));

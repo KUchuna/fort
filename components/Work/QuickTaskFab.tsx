@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, X, Calendar, User, FileText, AlertCircle, Check, Loader2, Briefcase } from "lucide-react";
 import { createWorkTodo } from "@/app/actions";
 
-export default function QuickTaskFab() {
+export default function QuickTaskFab({ clients }: { clients: { id: string, name: string }[] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -45,7 +45,7 @@ export default function QuickTaskFab() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50"
+              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 "
             />
 
             {/* Drawer Panel */}
@@ -78,7 +78,7 @@ export default function QuickTaskFab() {
                     <h3 className="text-xl font-bold text-black">Task Created!</h3>
                 </div>
               ) : (
-                <form action={handleSubmit} className="flex-1 flex flex-col gap-6 overflow-y-auto px-2">
+                <form action={handleSubmit} className="flex-1 flex flex-col gap-6 overflow-y-auto p-4 custom-scrollbar" id="worktodo">
                     
                     {/* 1. Title */}
                     <div>
@@ -93,16 +93,21 @@ export default function QuickTaskFab() {
 
                     {/* 2. Client Name */}
                     <div>
-                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Client / Project</label>
-                        <div className="relative">
-                            <Briefcase className="absolute left-4 top-4 text-gray-400 w-5 h-5" />
-                            <input 
-                                name="clientName" 
-                                required 
-                                placeholder="Client Name" 
-                                className="w-full bg-white border border-gray-200 pl-12 p-4 rounded-xl outline-none focus:border-[#F8AFA6] transition-all"
-                            />
-                        </div>
+                      <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Client / Project</label>
+                      <div className="relative">
+                          <Briefcase className="absolute left-4 top-4 text-gray-400 w-5 h-5" />
+                          <select 
+                              name="clientId" 
+                              required 
+                              className="w-full bg-white border border-gray-200 pl-12 p-4 rounded-xl outline-none focus:border-[#F8AFA6] transition-all appearance-none"
+                              defaultValue="Select a Client..."
+                          >
+                              <option value="Select a Client..." disabled>Select a Client...</option>
+                              {clients.map(c => (
+                                  <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                          </select>
+                      </div>
                     </div>
 
                     {/* 3. Deadline */}
@@ -125,7 +130,7 @@ export default function QuickTaskFab() {
                             {['Low', 'Medium', 'High'].map((p) => (
                                 <label key={p} className="cursor-pointer">
                                     <input type="radio" name="priority" value={p.toLowerCase()} className="peer sr-only" defaultChecked={p === 'Medium'} />
-                                    <div className="text-center py-3 rounded-xl border border-gray-200 text-gray-500 font-bold text-sm peer-checked:bg-black peer-checked:text-white peer-checked:border-black transition-all hover:bg-gray-50">
+                                    <div className="text-center py-3 rounded-xl border border-gray-200 text-gray-500 font-bold text-sm peer-checked:bg-black peer-checked:text-white peer-checked:border-black transition-all hover:bg-gray-50 peer-checked:hover:bg-black">
                                         {p}
                                     </div>
                                 </label>
@@ -139,18 +144,23 @@ export default function QuickTaskFab() {
                         <textarea 
                             name="description" 
                             placeholder="Add details, specific GL accounts, or contact persons..." 
-                            className="w-full h-full min-h-[120px] bg-white border border-gray-200 p-4 rounded-xl outline-none focus:border-[#F8AFA6] transition-all resize-none leading-relaxed"
+                            className="w-full h-full min-h-[120px] max-h-[60%] bg-white border border-gray-200 p-4 rounded-xl outline-none focus:border-[#F8AFA6] transition-all resize-none leading-relaxed"
                         />
                     </div>
 
                     {/* Submit */}
-                    <button 
-                        disabled={isPending}
-                        type="submit"
-                        className="mt-2 w-full bg-[#F8AFA6] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-all shadow-lg shadow-[#F8AFA6]/30 flex justify-center items-center group"
+                     <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      disabled={isPending}
+                      className="w-full bg-[#F8AFA6] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-2xl transition-all shadow-lg shadow-[#F8AFA6]/30 flex justify-center items-center group"
+                      type="submit"
                     >
-                        {isPending ? <Loader2 className="animate-spin" /> : "Create Task"}
-                    </button>
+                      Submit
+                      {isPending && (
+                        <Loader2 className="animate-spin h-5 w-5" />
+                      )} 
+                    </motion.button>
                 </form>
               )}
             </motion.div>

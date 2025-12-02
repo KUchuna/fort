@@ -45,3 +45,36 @@
 #todo {
   scrollbar-color: #d1067c transparent; /* Pink thumb, Transparent track */
 }
+
+#worktodo {
+  scrollbar-color: var(--color-main) transparent; /* Pink thumb, Transparent track */
+}
+
+* {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #1DB954 transparent; /* Pink thumb, Transparent track */
+}
+
+*::-webkit-scrollbar {
+  width: 4px; /* Thin width */
+  height: 4px; /* Thin height for horizontal scroll */
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent; /* Invisible track */
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #1DB954; /* Pink color */
+  border-radius: 9999px; /* Fully rounded */
+}
+
+*::-webkit-scrollbar-button {
+  display: none; /* Remove buttons */
+}
+
+
+* {
+  scrollbar-color: var(--color-main) transparent; /* Pink thumb, Transparent track */
+}
