@@ -27,12 +27,8 @@ export default function EngagementStats({ tasks }: { tasks: Task[] }) {
     if (t.status === "completed" || t.status === "received") {
       clientStats[client].doneCount += 1;       
       clientStats[client].progressScore += 1;   
-    } else if (t.status === "document") {
-      clientStats[client].progressScore += 0.8;
-    } else if (t.status === "review") {
-      clientStats[client].progressScore += 0.6;
     } else if (t.status === "with_client") {
-      clientStats[client].progressScore += 0.2; 
+      clientStats[client].progressScore += 0.5; 
     }
   });
 
@@ -41,9 +37,6 @@ export default function EngagementStats({ tasks }: { tasks: Task[] }) {
     // Calculate percentage for A and B
     const percentA = a.progressScore / a.totalCount;
     const percentB = b.progressScore / b.totalCount;
-
-    // Sort Ascending (0% -> 100%)
-    // If you want completed at the TOP, swap this to: percentB - percentA
     return percentA - percentB; 
   });
 

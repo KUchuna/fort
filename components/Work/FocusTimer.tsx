@@ -80,7 +80,7 @@ export default function FocusTimer({
           <div className="mb-8">
             {/* Display the resolved Name */}
             <h3 className="text-xl font-bold text-[#F8AFA6]">{activeTimer.clientName}</h3>
-            <p className="text-gray-400">{activeTimer.description || "Working..."}</p>
+            <p className="text-gray-400 break-words">{activeTimer.description || "Working..."}</p>
           </div>
           
           <button 
