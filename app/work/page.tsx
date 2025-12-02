@@ -133,7 +133,7 @@ export default async function WorkDashboard() {
                                     {allClients.find(c => c.id === log.clientId)?.name || "Unknown Client"}
                                 </div>
                                 
-                                <div className="text-gray-400 text-xs break-words">{log.description || "No description"}</div>
+                                <div className="text-gray-400 text-xs break-words">{log.description?.slice(0,100) || "No description"}</div>
                             </div>
                             <div className="font-mono font-bold text-gray-500 bg-white px-3 py-1 rounded-lg border border-gray-100 shadow-sm">
                                 {log.duration ? `${Math.floor(log.duration / 60)}m` : 'Running'}
