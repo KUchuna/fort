@@ -126,7 +126,7 @@ function TodoItem({ todo }: { todo: Todo }) {
 
             <div className="flex-1 min-w-0 pt-0.5">
                 {/* Title */}
-                <p className={`font-bold text-sm leading-snug transition-colors ${todo.isCompleted ? "text-gray-400 line-through decoration-2" : "text-gray-900"}`}>
+                <p className={`font-bold text-sm leading-snug transition-colors break-words ${todo.isCompleted ? "text-gray-400 line-through decoration-2" : "text-gray-900"}`}>
                     {todo.title}
                 </p>
                 
