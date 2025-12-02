@@ -2,10 +2,8 @@
 
 import { neon } from "@neondatabase/serverless";
 import { revalidatePath } from "next/cache";
-import { createSession, createChatSession, verifySession} from '@/lib/own-auth';
-import { put, del } from '@vercel/blob';
+import { del } from '@vercel/blob';
 import Pusher from 'pusher';
-import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import { wishlistItem, timeEntries, workTasks } from "@/lib/auth-schema";
 import {auth} from "@/lib/auth"

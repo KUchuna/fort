@@ -1,6 +1,5 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
-import { verifySession } from '@/lib/own-auth';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 
