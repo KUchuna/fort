@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { del } from '@vercel/blob';
 import Pusher from 'pusher';
 import { cookies, headers } from "next/headers";
-import { wishlistItem, timeEntries, workTasks } from "@/lib/auth-schema";
+import { wishlistItem, timeEntries, workTasks, workTodos } from "@/lib/auth-schema";
 import {auth} from "@/lib/auth"
 import { db } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
@@ -509,6 +509,44 @@ export async function deleteTask(taskId: string) {
 
   await db.delete(workTasks)
     .where(and(eq(workTasks.id, taskId), eq(workTasks.userId, session.user.id)));
+
+  revalidatePath("/work");
+}
+
+export async function createWorkTodo(formData: FormData) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  await db.insert(workTodos).values({
+    id: crypto.randomUUID(),
+    userId: session.user.id,
+    title: formData.get("title") as string,
+    clientName: formData.get("clientName") as string,
+    description: formData.get("description") as string,
+    dueDate: formData.get("dueDate") ? new Date(formData.get("dueDate") as string) : null,
+    isCompleted: false,
+  });
+
+  revalidatePath("/work");
+}
+
+export async function toggleWorkTodo(id: string, currentState: boolean) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  await db.update(workTodos)
+    .set({ isCompleted: !currentState })
+    .where(and(eq(workTodos.id, id), eq(workTodos.userId, session.user.id)));
+
+  revalidatePath("/work");
+}
+
+export async function deleteWorkTodo(id: string) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) throw new Error("Unauthorized");
+
+  await db.delete(workTodos)
+    .where(and(eq(workTodos.id, id), eq(workTodos.userId, session.user.id)));
 
   revalidatePath("/work");
 }

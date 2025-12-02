@@ -155,6 +155,17 @@ export const workTasks = pgTable("work_tasks", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const workTodos = pgTable("work_todos", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  clientName: text("client_name"),
+  description: text("description"),
+  dueDate: timestamp("due_date"),
+  isCompleted: boolean("is_completed").default(false).notNull(), // Track completion
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const userRelations = relations(user, ({ many }) => ({
   sessions: many(session),
   accounts: many(account),

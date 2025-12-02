@@ -1,12 +1,14 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
-import { timeEntries, workTasks } from "@/lib/auth-schema";
+import { timeEntries, workTasks, workTodos } from "@/lib/auth-schema";
 import { redirect } from "next/navigation";
 import { eq, and, isNull, desc } from "drizzle-orm";
 import FocusTimer from "@/components/Work/FocusTimer";
 import { LayoutDashboard } from "lucide-react";
 import TaskBoard from "@/components/Work/TaskBoard";
+import QuickTaskFab from "@/components/Work/QuickTaskFab";
+import TodoList from "@/components/Work/TodoList";
 
 
 
@@ -42,6 +44,12 @@ export default async function WorkDashboard() {
 
   const tasks = await db.select().from(workTasks).where(eq(workTasks.userId, session.user.id));
   
+  const todos = await db
+    .select()
+    .from(workTodos)
+    .where(eq(workTodos.userId, session.user.id))
+    .orderBy(desc(workTodos.createdAt));
+
   return (
     <main className="min-h-screen bg-[#F9F1F0] pt-24 px-6 md:px-12 pb-12">
       <div className="max-w-7xl mx-auto">
@@ -60,10 +68,10 @@ export default async function WorkDashboard() {
             
           {/* Left Column: Timer Widget (Takes 1 col) */}
           <div className="lg:col-span-1 flex flex-col gap-8">
-             <FocusTimer activeTimer={activeTimer as any} />
-             
-             {/* Mini Recent Log */}
-             <div className="bg-white/50 rounded-3xl p-6 border border-[#FADCD9]">
+             <div className="lg:col-span-1 flex flex-col gap-6">
+              <FocusTimer activeTimer={activeTimer as any} />
+              {/* Put the Todo List here if you want it prominent on the left */}
+              <div className="bg-white/50 rounded-3xl p-6 border border-[#FADCD9]">
                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">Recent Sessions</h3>
                 <div className="space-y-3">
                     {recentLogs.map(log => (
@@ -80,6 +88,10 @@ export default async function WorkDashboard() {
                     {recentLogs.length === 0 && <div className="text-gray-400 text-sm">No activity yet.</div>}
                 </div>
              </div>
+              <TodoList initialTodos={todos} />
+            </div>
+             {/* Mini Recent Log */}
+             
           </div>
 
           {/* Right Column: Task Board (Placeholder for now) (Takes 2 cols) */}
@@ -92,6 +104,7 @@ export default async function WorkDashboard() {
 
         </div>
       </div>
+      <QuickTaskFab />
     </main>
   );
 }

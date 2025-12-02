@@ -15,7 +15,7 @@ export default function Loader({ children }: { children: React.ReactNode }) {
 
     const timeout = setTimeout(() => {
       setLoading(false)
-    }, 2000)
+    }, 700)
 
     return () => clearTimeout(timeout)
   }, [pathname])
