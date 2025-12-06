@@ -16,7 +16,7 @@ export default async function WorkDashboard() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/wishlist/login");
 
-  if (session.user.role !== "admin") {
+  if (session?.user.role !== "admin") {
      return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <div className="bg-white p-8 rounded-xl shadow-md text-center">
